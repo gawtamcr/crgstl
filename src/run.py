@@ -4,18 +4,20 @@ import numpy as np
 from primitives import PrimitiveLibrary
 from stl import Sequence, Eventually, Predicate
 from get_predicates import get_predicates
+import time
 
 # 1. Setup Environment
-env = gym.make("PandaStack-v3", render_mode="human")
+env = gym.make("PandaPickAndPlace-v3", render_mode="human")
 observation, info = env.reset()
 primitives = PrimitiveLibrary()
 
 # 2. Define The STL Task (The "Score")
-# Task: Align -> Pick -> Lift
+# Task: Align -> Pick -> Lift -> Place
 task_logic = Sequence([
     Eventually(Predicate("Aligned", lambda s: s["aligned_with_obj"])),
     Eventually(Predicate("Holding", lambda s: s["holding_obj"])),
-    Eventually(Predicate("Lifted",  lambda s: s["obj_lifted"]))
+    Eventually(Predicate("Lifted",  lambda s: s["obj_lifted"])),
+    Eventually(Predicate("Placed",  lambda s: s["at_target"]))
 ])
 
 # 3. Main Loop
@@ -25,6 +27,7 @@ for _ in range(1000):
     # For this snippet, we mock the extraction for clarity
     ee_position = observation['observation'][0:3]
     object_position = observation['achieved_goal'][0:3] # In Stack env, this is usually the object
+    target_position = observation['desired_goal'][0:3]
     current_predicates = get_predicates(observation, info)
 
     # B. The Conductor: Update Logic & Decide Phase
@@ -53,7 +56,7 @@ for _ in range(1000):
         target = object_position.copy()
         action_xyz = primitives.move_to(ee_position, target)
         # If close enough, trigger grasp
-        if np.linalg.norm(ee_position - target) < 0.02:
+        if np.linalg.norm(ee_position - target) < 0.03:
             gripper_action = primitives.grasp()
             
     elif phase_name == "Lifted":
@@ -62,12 +65,26 @@ for _ in range(1000):
         target[2] = 0.3
         action_xyz = primitives.move_to(ee_position, target)
         gripper_action = primitives.grasp() # Keep holding
+        
+    elif phase_name == "Placed":
+        # Strategy: Move to Target
+        target = target_position.copy()
+        target[2] += 0.05 # Slightly above target to avoid smashing
+        action_xyz = primitives.move_to(ee_position, target)
+        
+        # If we are close to the placement target, release!
+        if np.linalg.norm(ee_position - target) < 0.05:
+            gripper_action = primitives.release()
+        else:
+            gripper_action = primitives.grasp()
 
     # D. Execute
     full_action = np.append(action_xyz, gripper_action)
     observation, reward, terminated, truncated, info = env.step(full_action)
+    time.sleep(0.05)
     
     if terminated or truncated:
         observation, info = env.reset()
+        task_logic.reset() # Reset the STL state machine
 
 env.close()

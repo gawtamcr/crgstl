@@ -1,6 +1,9 @@
 class STLNode:
     def check(self, state):
         raise NotImplementedError
+    
+    def reset(self):
+        pass
 
 class Predicate(STLNode):
     """Checks a specific condition in the environment (e.g., 'is_holding')."""
@@ -27,6 +30,9 @@ class Eventually(STLNode):
             self.satisfied = True
             return True
         return False
+    
+    def reset(self):
+        self.satisfied = False
 
 class Sequence(STLNode):
     """
@@ -55,3 +61,8 @@ class Sequence(STLNode):
         if self.current_step >= len(self.steps):
             return "DONE"
         return self.steps[self.current_step]
+
+    def reset(self):
+        self.current_step = 0
+        for step in self.steps:
+            step.reset()
