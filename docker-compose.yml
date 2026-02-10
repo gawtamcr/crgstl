@@ -1,0 +1,17 @@
+services:
+  tgpo:
+    image: crgstl:latest
+    # container_name: tgpo_train_gpu_container
+    network_mode: host
+    environment:
+      - DISPLAY=${DISPLAY}
+      - NVIDIA_VISIBLE_DEVICES=all
+    volumes:
+      - .:/app
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    command: bash -c "
+      cd src && 
+      python -B run.py"
+    stdin_open: true    
+    tty: true
+    runtime: nvidia
