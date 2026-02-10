@@ -51,7 +51,6 @@ class Sequence(STLNode):
         # Check current step
         current_node = self.steps[self.current_step]
         if current_node.check(state):
-            print(f"DEBUG: Logic Step {self.current_step} ({type(current_node).__name__}) Complete!")
             self.current_step += 1
             return False # Not fully done with sequence yet
         
