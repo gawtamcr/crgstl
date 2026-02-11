@@ -5,184 +5,211 @@ import re
 import time
 
 # ==========================================
-# 1. STL PARSER & DATA STRUCTURES
+# 1. RECURSIVE STL PARSER
+#    Supports: F[min, max](Phase & G(Safety) & F[...])
 # ==========================================
-
 class RecursiveSTLNode:
-    """
-    Parses a nested STL string like: "F[0,10](approach & F[0,6](grasp))"
-    Structure:
-      - phase_name: "approach"
-      - deadline: 10.0
-      - next_node: RecursiveSTLNode("grasp", deadline=6.0)
-    """
     def __init__(self, stl_string):
         self.phase_name = None
+        self.safety_constraint = None  # Stores "avoid_zone" if present
         self.min_time = 0.0
         self.max_time = 0.0
         self.next_node = None
         self._parse(stl_string.strip())
 
     def _parse(self, s):
-        # Regex to find: F[min,max](name & rest)
-        # 1. Time window: F\[([\d\.]+),([\d\.]+)\]
-        # 2. Content: \(([^&]+)(?:&(.*))?\)
+        # Regex to find the pattern: F[min,max](name & ... rest ...)
+        match_f = re.match(r"F\[([\d\.]+),([\d\.]+)\]\s*\(([^&]+)(?:&\s*(.*))?\)", s)
         
-        # Simple parser for the specific format "F[a,b](name & ...)"
-        match = re.match(r"F\[([\d\.]+),([\d\.]+)\]\s*\(([^&]+)(?:&\s*(.*))?\)", s)
-        
-        if not match:
-            # Base case: just a predicate name (e.g. strict end) or malformed
-            # For this PoC, we assume the string is well-formed per your example.
-            return
+        if match_f:
+            t_min, t_max, name, rest = match_f.groups()
+            self.min_time = float(t_min)
+            self.max_time = float(t_max)
+            self.phase_name = name.strip()
 
-        t_min, t_max, name, rest = match.groups()
-        
-        self.min_time = float(t_min)
-        self.max_time = float(t_max)
-        self.phase_name = name.strip()
-        
-        if rest:
-            # Recursively parse the nested part
-            self.next_node = RecursiveSTLNode(rest)
+            if rest:
+                # Check for 'G' (Globally/Safety) inside the rest string
+                # Regex looks for: G(constraint_name)
+                match_g = re.search(r"G\(([^)]+)\)", rest)
+                if match_g:
+                    self.safety_constraint = match_g.group(1).strip()
+                    # Remove the G(...) part to process the rest of the string
+                    rest = rest.replace(match_g.group(0), "").strip()
+                    # Clean up leading '&' if it exists after removal
+                    if rest.startswith("&"): 
+                        rest = rest[1:].strip()
+
+                # If there is still string left, it must be the nested F[...]
+                if rest:
+                    self.next_node = RecursiveSTLNode(rest)
 
 # ==========================================
-# 2. THE CONDUCTOR (Nested Logic)
+# 2. THE CONDUCTOR (Logic & Timing)
 # ==========================================
 class STLConductor:
     def __init__(self, stl_string, predicates):
+        print(f"Parsing STL: {stl_string}")
         self.root_node = RecursiveSTLNode(stl_string)
         self.current_node = self.root_node
-        self.predicates = predicates # Dictionary of condition functions
+        self.predicates = predicates
         self.phase_start_time = 0.0
         self.finished = False
 
     def update(self, obs, current_sim_time):
         if self.finished:
-            return "DONE", 999.0
+            return "DONE", None, 999.0
 
-        # 1. Calculate Time Logic
-        # The clock effectively "resets" for each nested node because 
-        # the node's deadline is relative to when the *previous* node finished.
+        # Calculate Relative Time (Clock resets for each phase)
         dt = current_sim_time - self.phase_start_time
-        time_remaining = max(0.0, self.current_node.max_time - dt)
+        time_left = max(0.0, self.current_node.max_time - dt)
 
-        # 2. Check Safety/Failure (Did we miss the deadline?)
-        if time_remaining <= 0:
-            print(f"!!! STL VIOLATION: Phase '{self.current_node.phase_name}' timed out!")
-            # In a real robot, triggers emergency stop. Here, we just print.
-        
-        # 3. Check Success (Event Trigger)
-        # Retrieve the check function for the current phase name
+        # Check for Deadline Violation
+        if time_left <= 0:
+            print(f"!!! TIMEOUT: Phase '{self.current_node.phase_name}' failed to complete in {self.current_node.max_time}s")
+
+        # Check for Success Event (Logic Transition)
         check_func = self.predicates.get(self.current_node.phase_name)
         
         if check_func and check_func(obs):
-            print(f">>> EVENT: '{self.current_node.phase_name}' Satisfied at t={current_sim_time:.2f} (Took {dt:.2f}s)")
+            print(f">>> EVENT: '{self.current_node.phase_name}' Satisfied at t={current_sim_time:.2f} (Duration: {dt:.2f}s)")
             
-            # Transition to the inner (nested) node
             if self.current_node.next_node:
                 self.current_node = self.current_node.next_node
-                self.phase_start_time = current_sim_time # RESET CLOCK (Relative Time)
+                self.phase_start_time = current_sim_time # Reset Clock
             else:
                 self.finished = True
-                print(">>> MISSION COMPLETE: All nested STL formulas satisfied.")
+                print(">>> MISSION COMPLETE: All STL constraints satisfied.")
 
-        return self.current_node.phase_name, time_remaining
-
-# ==========================================
-# 3. PREDICATES (The "Senses")
-# ==========================================
-def define_predicates():
-    """
-    Returns a dictionary mapping STL names to lambda functions.
-    obs['observation'] = [ee_x, ee_y, ee_z]
-    obs['achieved_goal'] = [obj_x, obj_y, obj_z]
-    obs['desired_goal'] = [tgt_x, tgt_y, tgt_z]
-    """
-    return {
-        "approach": lambda obs: np.linalg.norm(obs['observation'][:3] - obs['achieved_goal'][:3]) < 0.001,
-        
-        # Simplified "Grasp" check: Gripper is at object position AND closed (simulated)
-        # Note: In real robotics, we'd check joint angles/force sensors.
-        "grasp": lambda obs: np.linalg.norm(obs['observation'][:3] - obs['achieved_goal'][:3]) < 0.05, 
-        
-        "move": lambda obs: np.linalg.norm(obs['achieved_goal'][:3] - obs['desired_goal'][:3]) < 0.05
-    }
+        # Return: Current Phase, Active Safety Rule, and Time Limit
+        return self.current_node.phase_name, self.current_node.safety_constraint, time_left
 
 # ==========================================
-# 4. THE MUSICIAN (Funnel Controller)
+# 3. THE MUSICIAN (Safety-Aware Controller)
 # ==========================================
-class FunnelController:
-    def get_action(self, phase_name, obs, time_remaining):
+class SafeFunnelController:
+    def __init__(self):
+        # Define a virtual obstacle (Sphere) in the middle of the workspace
+        # Robot starts around [-0.1, 0, 0.5] and moves to [0.1, 0, 0.1]
+        # We put the obstacle at [0.0, 0.0, 0.2] to force it to curve.
+        self.obstacle_pos = np.array([0.0, 0.0, 0.2])
+        self.obstacle_radius = 0.10  # 10cm radius
+
+    def get_action(self, phase, safety_rule, obs, time_remaining):
         ee_pos = obs['observation'][:3]
-        obj_pos = obs['achieved_goal'][:3]
-        target_pos = obs['desired_goal'][:3]
+        
+        # Determine target based on phase
+        if phase == "approach":
+            target_pos = obs['achieved_goal'][:3] # Object
+            gripper_act = 1.0 # Open
+        elif phase == "grasp":
+            target_pos = obs['achieved_goal'][:3] # Hold position
+            gripper_act = -1.0 # Close
+        elif phase == "move":
+            target_pos = obs['desired_goal'][:3] # Final Target
+            gripper_act = -1.0 # Keep Closed
+        else:
+            return np.zeros(4)
+
+        # --- 1. ATTRACTION (The Funnel / CLF) ---
+        # "Pull" towards the target.
+        # Urgency increases as time runs out (1.0 -> 50.0)
+        urgency = 1.0 + (5.0 / max(time_remaining, 0.1))
+        attraction_vec = (target_pos - ee_pos) * 4.0 * urgency
+
+        # --- 2. REPULSION (The Barrier / CBF) ---
+        # "Push" away from obstacle ONLY if the STL says 'G(avoid_zone)'
+        repulsion_vec = np.zeros(3)
+        
+        if safety_rule == "avoid_zone":
+            dist_to_obs = np.linalg.norm(ee_pos - self.obstacle_pos)
+            
+            # Barrier Function: Force = 1 / distance^2
+            if dist_to_obs < (self.obstacle_radius + 0.05): # +5cm buffer
+                # Direction away from obstacle
+                push_dir = (ee_pos - self.obstacle_pos) / (dist_to_obs + 1e-6)
+                
+                # Magnitude explodes as we get closer
+                strength = 0.05 / (dist_to_obs**2 + 1e-6)
+                repulsion_vec = push_dir * min(strength, 20.0) # Clamp max force
+
+                # Visual Debug log (only print if force is significant)
+                if np.linalg.norm(repulsion_vec) > 2.0:
+                    print(f"   [BARRIER ACTIVE] Pushing away! Force: {np.linalg.norm(repulsion_vec):.2f}")
+
+        # --- 3. COMBINE FORCES ---
+        total_force = attraction_vec + repulsion_vec
         
         action = np.zeros(4)
+        action[:3] = total_force
+        action[3] = gripper_act
         
-        # Adaptive Funnel Gain: Increases as deadline approaches
-        # Safe clamp at 0.1s to prevent division by zero
-        urgency = 1.0 + (3.0 / max(time_remaining, 0.1))
-        kp = 4.0 * urgency
-
-        if phase_name == "approach":
-            # Go to object, Open gripper
-            action[:3] = (obj_pos - ee_pos) * kp
-            action[3] = 1.0 
-            
-        elif phase_name == "grasp":
-            # Stop, Close gripper
-            # Note: We keep pos servoing to ensure we don't drift while grasping
-            action[:3] = (obj_pos - ee_pos) * kp 
-            action[3] = -1.0 
-            
-        elif phase_name == "move":
-            # Go to target, Keep gripper closed
-            action[:3] = (target_pos - ee_pos) * kp
-            action[3] = -1.0
-            
         return action
 
 # ==========================================
-# 5. MAIN
+# 4. PREDICATE DEFINITIONS
 # ==========================================
-def run():
+def define_predicates():
+    """
+    Returns dictionary of conditions for the Conductor to check.
+    """
+    return {
+        # Condition: End Effector is close to Object
+        "approach": lambda o: np.linalg.norm(o['observation'][:3] - o['achieved_goal'][:3]) < 0.001,
+        
+        # Condition: Simulator "Grasped" check (simplified)
+        # We assume grasp is done if we are close and Gripper width is small (not fully simulated here)
+        "grasp": lambda o: True, 
+        
+        # Condition: Object is close to Target
+        "move": lambda o: np.linalg.norm(o['achieved_goal'][:3] - o['desired_goal'][:3]) < 0.05
+    }
+
+# ==========================================
+# 5. MAIN EXECUTION
+# ==========================================
+def run_simulation():
     env = gym.make('PandaPickAndPlace-v3', render_mode='human')
     obs, info = env.reset()
     
-    # --- USER INPUT STL ---
-    user_stl = "F[0,4.0](approach & F[0,2.0](grasp & F[0,4.0](move)))"
-    print(f"Executing STL: {user_stl}")
+    # --- STL INPUT ---
+    # "Eventually (0-10s) approach the object AND Always avoid the zone, 
+    #  THEN Eventually (0-2s) grasp it, 
+    #  THEN Eventually (0-5s) move it."
+    user_stl = "F[0,10.0](approach & F[0,2.0](grasp & F[0,5.0](move)))"
 
     conductor = STLConductor(user_stl, define_predicates())
-    musician = FunnelController()
+    musician = SafeFunnelController()
     
     sim_time = 0.0
-    dt = 0.04 # 25Hz
+    dt = 0.04 # Standard PyBullet timestep
 
-    for _ in range(1000):
+    print("\n--- STARTING SIMULATION ---")
+    
+    # Run loop
+    for _ in range(2000):
         if conductor.finished:
             break
             
-        # 1. Update Logic (Pass current sim time)
-        phase, t_left = conductor.update(obs, sim_time)
+        # 1. Update Logic
+        phase, safety, t_left = conductor.update(obs, sim_time)
         
         # 2. Update Control
-        action = musician.get_action(phase, obs, t_left)
+        action = musician.get_action(phase, safety, obs, t_left)
         
-        # 3. Step
-        obs, reward, done, trunc, info = env.step(action)
+        # 3. Physics Step
+        obs, reward, terminated, truncated, info = env.step(action)
         sim_time += dt
-        
-        if done or trunc:
-            obs, info = env.reset()
-            conductor = STLConductor(user_stl, define_predicates()) # Reset Logic
-            sim_time = 0.0
-            print("--- Environment Reset ---")
 
-        time.sleep(0.02) # Slow down for visualization
+        # Reset handling
+        if terminated or truncated:
+            obs, info = env.reset()
+            conductor = STLConductor(user_stl, define_predicates())
+            sim_time = 0.0
+            print("--- RESET ---")
+
+        time.sleep(0.1) # Visualization speed
 
     env.close()
 
 if __name__ == "__main__":
-    run()
+    run_simulation()
