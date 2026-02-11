@@ -11,7 +11,7 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix
     command: bash -c "
       cd src && 
-      python -B test1.py"
+      python -B stl_poc2.py"
     stdin_open: true    
     tty: true
     runtime: nvidia
