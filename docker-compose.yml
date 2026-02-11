@@ -1,6 +1,6 @@
 services:
   tgpo:
-    image: crgstl:latest
+    image: crgstl
     # container_name: tgpo_train_gpu_container
     network_mode: host
     environment:

@@ -1,18 +1,24 @@
 class STLNode:
-    def check(self, state):
+    def robustness(self, state):
         raise NotImplementedError
+
+    def check(self, state):
+        return self.robustness(state) > 0
     
     def reset(self):
         pass
 
 class Predicate(STLNode):
-    """Checks a specific condition in the environment (e.g., 'is_holding')."""
-    def __init__(self, name, check_fn):
+    """Returns a robustness value. rho > 0 means satisfied."""
+    def __init__(self, name, robustness_fn):
         self.name = name
-        self.check_fn = check_fn
+        self.robustness_fn = robustness_fn
     
-    def check(self, state):
-        return self.check_fn(state)
+    def robustness(self, state):
+        return self.robustness_fn(state)
+
+    def __repr__(self):
+        return f"Predicate({self.name})"
 
 class Eventually(STLNode):
     """
@@ -21,18 +27,18 @@ class Eventually(STLNode):
     """
     def __init__(self, child):
         self.child = child
-        self.satisfied = False
+        self.max_rho = -float('inf')
 
-    def check(self, state):
-        if self.satisfied:
-            return True
-        if self.child.check(state):
-            self.satisfied = True
-            return True
-        return False
+    def robustness(self, state):
+        # rho = max(rho_current, max_rho_history)
+        self.max_rho = max(self.max_rho, self.child.robustness(state))
+        return self.max_rho
     
     def reset(self):
-        self.satisfied = False
+        self.max_rho = -float('inf')
+
+    def __repr__(self):
+        return f"Eventually({self.child})"
 
 class Sequence(STLNode):
     """
@@ -43,18 +49,19 @@ class Sequence(STLNode):
         self.steps = steps # List of STLNodes
         self.current_step = 0
 
-    def check(self, state):
+    def robustness(self, state):
         # If all steps done, return True
         if self.current_step >= len(self.steps):
-            return True
+            return 1.0 # Max robustness
         
         # Check current step
         current_node = self.steps[self.current_step]
-        if current_node.check(state):
-            self.current_step += 1
-            return False # Not fully done with sequence yet
+        rho = current_node.robustness(state)
         
-        return False
+        if rho > 0:
+            self.current_step += 1
+            
+        return rho
     
     def get_active_task(self):
         if self.current_step >= len(self.steps):
@@ -65,3 +72,6 @@ class Sequence(STLNode):
         self.current_step = 0
         for step in self.steps:
             step.reset()
+
+    def __repr__(self):
+        return f"Sequence(steps={len(self.steps)}, current={self.current_step})"

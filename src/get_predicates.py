@@ -11,13 +11,13 @@ def get_predicates(obs, info):
         
     target_pos = obs['desired_goal'][:3]
     
-    # Logic & Thresholds
-    is_holding = (gripper_width < 0.045) and (gripper_width > 0.01)
+    # Raw Metrics for Robustness
+    # We return distances. STL will define thresholds (e.g., 0.03 - dist)
     
     predicates = {
-        "holding_obj": is_holding,
-        "aligned_with_obj": np.linalg.norm(ee_pos[:2] - obj1_pos[:2]) < 0.03,
-        "obj_lifted": obj1_pos[2] > 0.15,
-        "at_target": np.linalg.norm(obj1_pos - target_pos) < 0.05
+        "gripper_width": gripper_width,
+        "dist_xy": np.linalg.norm(ee_pos[:2] - obj1_pos[:2]),
+        "obj_z": obj1_pos[2],
+        "dist_target": np.linalg.norm(obj1_pos - target_pos)
     }
     return predicates

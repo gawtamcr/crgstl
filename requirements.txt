@@ -1,3 +1,7 @@
 numpy
 gymnasium
 panda-gym
+tensorboard
+torch
+matplotlib
+stable-baselines3
