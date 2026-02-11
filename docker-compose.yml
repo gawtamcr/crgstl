@@ -11,7 +11,7 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix
     command: bash -c "
       cd src && 
-      python -B train.py"
+      python -B test1.py"
     stdin_open: true    
     tty: true
     runtime: nvidia
