@@ -169,13 +169,14 @@ def define_predicates():
 # ==========================================
 def run_simulation():
     env = gym.make('PandaPickAndPlace-v3', render_mode='human')
+    env.unwrapped.task.distance_threshold = 0.05
     obs, info = env.reset()
     
     # --- STL INPUT ---
     # "Eventually (0-10s) approach the object AND Always avoid the zone, 
     #  THEN Eventually (0-2s) grasp it, 
     #  THEN Eventually (0-5s) move it."
-    user_stl = "F[0,10.0](approach & F[0,2.0](grasp & F[0,5.0](move)))"
+    user_stl = "F[0,10.0](approach & G(avoid_zone) & F[0,2.0](grasp & F[0,5.0](move)))"
 
     conductor = STLConductor(user_stl, define_predicates())
     musician = SafeFunnelController()
@@ -188,6 +189,8 @@ def run_simulation():
     # Run loop
     for _ in range(2000):
         if conductor.finished:
+            print("--- MISSION COMPLETE ---")
+            time.sleep(5)
             break
             
         # 1. Update Logic
