@@ -236,17 +236,22 @@ def run_dual_stacking():
     dt = 0.04
 
     while True:
-        if conductor.finished:
+        # 1. Update Logic
+        phase, safety, t_left = conductor.update(obs, sim_time)
+        
+        # 2. CHECK FOR COMPLETION BEFORE CALLING MUSICIAN
+        if conductor.finished or phase == "DONE" or phase is None:
             print(">>> MISSION COMPLETE. Admiring stack...")
-            for i in range(50):
+            time.sleep(2.0) # Pause to admire the stack
+            # Pause and then reset
+            for _ in range(50):
                 env.step(np.zeros(4))
                 time.sleep(0.04)
+            
             obs, _ = env.reset()
             conductor = STLConductor(stl, define_stacking_predicates())
-            musician = PDController() 
             sim_time = 0.0
-            print("--- RESETTING SIMULATION ---")
-            continue
+            continue # Skip the rest of the loop
 
         phase, safety, t_left = conductor.update(obs, sim_time)
         action = musician.get_action(phase, safety, obs, t_left)
