@@ -9,13 +9,9 @@ import panda_gym
 import numpy as np
 import torch as th
 import re
-import time
-import random
-import os
 from stable_baselines3 import SAC
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
 from stable_baselines3.common.vec_env import DummyVecEnv
-from stable_baselines3.common.monitor import Monitor
 from typing import Dict, Callable, Tuple, Optional, List
 
 # ==========================================
@@ -331,12 +327,7 @@ def collect_expert_transitions(env: STLGymWrapper, controller: SafeFunnelControl
             # Get raw observation for expert controller
             raw_obs = env.get_wrapper_attr('last_obs_dict')
             conductor = env.get_wrapper_attr('conductor')
-            
-            # Get current phase info from conductor (updated in reset/step)
-            current_node = conductor.current_node
-            phase = current_node.phase_name
-            safety = current_node.safety_constraint
-            t_left = max(0.0, current_node.max_time - (env.get_wrapper_attr('sim_time') - conductor.phase_start_time))
+            phase, safety, t_left = conductor.update(raw_obs, env.get_wrapper_attr('sim_time'))
             
             # Get expert action
             action = controller.get_action(phase, safety, raw_obs, t_left)
@@ -354,7 +345,7 @@ def collect_expert_transitions(env: STLGymWrapper, controller: SafeFunnelControl
             aug_obs = next_aug_obs
             done = terminated or truncated
             ep_reward += reward
-            time.sleep(0.05)  # Slow down for visualization
+            
             if step_info.get('success', False):
                 successful_episodes += 1
         
@@ -381,69 +372,29 @@ def define_predicates() -> Dict[str, Callable]:
     """
     return {
         "approach": lambda o: np.linalg.norm(o['observation'][:3] - o['achieved_goal'][:3]) < 0.015,
-        "grasp": lambda o: True, # o['achieved_goal'][2] > 0.045,  # Object lifted
+        "grasp": lambda o: o['achieved_goal'][2] > 0.045,  # Object lifted
         "move": lambda o: np.linalg.norm(o['achieved_goal'][:3] - o['desired_goal'][:3]) < 0.05
     }
 
 
-class STLLoggingCallback(BaseCallback):
-    """
-    Callback for logging STL metrics to TensorBoard.
-    Logs:
-    - Success rate (rolling window)
-    - Timeout rate (rolling window)
-    - Current phase index
-    - Phase transitions
-    """
+class PhaseProgressCallback(BaseCallback):
+    """Callback to log phase progression during training."""
     
     def __init__(self, verbose: int = 0):
         super().__init__(verbose)
-        self.phase_map = {"approach": 0, "grasp": 1, "move": 2, "DONE": 3}
-        self.success_buffer = []
-        self.timeout_buffer = []
         self.phase_counts = {}
-        self.total_successes = 0
+        self.episode_count = 0
     
     def _on_step(self) -> bool:
-        # 1. Log Phase Information
-        try:
-            conductor = self.training_env.envs[0].get_wrapper_attr('conductor')
-            if conductor:
-                phase_name = conductor.current_node.phase_name
-                phase_idx = 3 if conductor.finished else self.phase_map.get(phase_name, -1)
-                self.logger.record("stl/current_phase_idx", phase_idx)
-        except Exception:
-            pass
-
-        # 2. Log Episode Outcomes from Info
+        # Log phase information from info dict
         infos = self.locals.get('infos', [])
         for info in infos:
             if 'phase_transition' in info:
-                trans = info['phase_transition']
-                self.phase_counts[trans] = self.phase_counts.get(trans, 0) + 1
-                self.logger.record("stl/transitions", 1)
-
+                transition = info['phase_transition']
+                self.phase_counts[transition] = self.phase_counts.get(transition, 0) + 1
             if info.get('success', False):
-                self.success_buffer.append(1)
-                self.timeout_buffer.append(0)
-                self.total_successes += 1
-                self.logger.record("stl/episode_success", 1)
-            elif info.get('timeout', False):
-                self.success_buffer.append(0)
-                self.timeout_buffer.append(1)
-                self.logger.record("stl/episode_timeout", 1)
-            elif self.locals.get('dones', [False])[0]:
-                self.success_buffer.append(0)
-                self.timeout_buffer.append(0)
+                self.episode_count += 1
         
-        # 3. Log Rolling Statistics
-        if len(self.success_buffer) > 0:
-            if len(self.success_buffer) > 100:
-                self.success_buffer = self.success_buffer[-100:]
-                self.timeout_buffer = self.timeout_buffer[-100:]
-            self.logger.record("stl/success_rate", np.mean(self.success_buffer))
-            self.logger.record("stl/timeout_rate", np.mean(self.timeout_buffer))
-
         return True
     
     def _on_training_end(self) -> None:
@@ -451,7 +402,7 @@ class STLLoggingCallback(BaseCallback):
             print("\n=== Phase Transition Statistics ===")
             for transition, count in sorted(self.phase_counts.items()):
                 print(f"{transition}: {count}")
-            print(f"Total successful episodes: {self.total_successes}")
+            print(f"Total successful episodes: {self.episode_count}")
 
 
 def main():
@@ -469,15 +420,13 @@ def main():
     # Initialize Environment
     base_env = gym.make('PandaPickAndPlace-v3', render_mode="human")  # Disable rendering for faster training
     env = STLGymWrapper(base_env, user_stl, define_predicates())
-    env = Monitor(env)  # Wrap for SB3 logging
-    env.unwrapped.task.distance_threshold = 0.05
+    
     # Initialize SAC Model
     print("Initializing SAC model...")
     model = SAC(
         "MlpPolicy", 
         env, 
         verbose=1, 
-        tensorboard_log="./sac_stl_tensorboard/",
         buffer_size=100_000,
         learning_rate=3e-4,
         batch_size=256,
@@ -494,7 +443,7 @@ def main():
     
     expert = SafeFunnelController(position_gain=8.0)
     obs, actions, next_obs, rewards, dones = collect_expert_transitions(
-        env, expert, n_episodes=100, verbose=True
+        env, expert, n_episodes=30, verbose=True
     )
     
     print(f"\nPre-filling replay buffer with {len(obs)} expert transitions...")
@@ -516,12 +465,12 @@ def main():
     print("=" * 60)
     
     # Setup callbacks
-    phase_callback = STLLoggingCallback(verbose=1)
+    phase_callback = PhaseProgressCallback(verbose=1)
     
     # Train the model
-    print("\nStarting training for 200,000 timesteps...")
+    print("\nStarting training for 100,000 timesteps...")
     model.learn(
-        total_timesteps=200_000,
+        total_timesteps=100_000,
         callback=phase_callback,
         log_interval=10,
     )

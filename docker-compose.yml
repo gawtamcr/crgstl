@@ -10,7 +10,7 @@ services:
       - .:/app
       - /tmp/.X11-unix:/tmp/.X11-unix
     command: bash -c "
-      cd src && 
+      cd src/behavior_cloning && 
       python -B bc.py"
     stdin_open: true    
     tty: true
