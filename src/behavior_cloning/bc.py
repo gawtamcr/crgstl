@@ -39,33 +39,28 @@ class RecursiveSTLNode:
         """Parse STL string into phase components."""
         # Match: F[min,max](phase & G(safety) & next)
         match_f = re.match(r"F\[([\d\.]+),([\d\.]+)\]\s*\(([^&]+)(?:&\s*(.*))?\)", s)
-        if not match_f:
-            raise ValueError(f"Invalid STL format: {s}")
-        
-        t_min, t_max, name, rest = match_f.groups()
-        self.min_time = float(t_min)
-        self.max_time = float(t_max)
-        self.phase_name = name.strip()
-        
-        if rest:
-            # Extract safety constraint G(...)
-            match_g = re.search(r"G\(([^)]+)\)", rest)
-            if match_g:
-                self.safety_constraint = match_g.group(1).strip()
-                rest = rest.replace(match_g.group(0), "").strip()
-                if rest.startswith("&"):
-                    rest = rest[1:].strip()
-            
-            # Parse remaining formula recursively
+        if match_f:
+            t_min, t_max, name, rest = match_f.groups()
+            self.min_time = float(t_min)
+            self.max_time = float(t_max)
+            self.phase_name = name.strip()
+
             if rest:
-                self.next_node = RecursiveSTLNode(rest)
+                match_g = re.search(r"G\(([^)]+)\)", rest)
+                if match_g:
+                    self.safety_constraint = match_g.group(1).strip()
+                    rest = rest.replace(match_g.group(0), "").strip()
+                    if rest.startswith("&"):
+                        rest = rest[1:].strip()
+                if rest:
+                    self.next_node = RecursiveSTLNode(rest)
 
-
+# ==========================================
+# 2. THE CONDUCTOR (Logic & Timing)
+# ==========================================
 class STLConductor:
-    """
-    Manages progression through STL phases based on predicate satisfaction.
-    """
     def __init__(self, stl_string: str, predicates: Dict[str, Callable]):
+        print(f"Parsing STL: {stl_string}")
         self.root_node = RecursiveSTLNode(stl_string)
         self.current_node = self.root_node
         self.predicates = predicates
@@ -74,12 +69,7 @@ class STLConductor:
         self.failed_timeout: bool = False
 
     def update(self, obs_dict: Dict, current_sim_time: float) -> Tuple[str, Optional[str], float]:
-        """
-        Update conductor state based on current observation and time.
-        
-        Returns:
-            (phase_name, safety_constraint, time_remaining)
-        """
+
         if self.finished:
             return "DONE", None, 0.0
 

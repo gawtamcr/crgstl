@@ -28,18 +28,12 @@ class RecursiveSTLNode:
             self.phase_name = name.strip()
 
             if rest:
-                # Check for 'G' (Globally/Safety) inside the rest string
-                # Regex looks for: G(constraint_name)
                 match_g = re.search(r"G\(([^)]+)\)", rest)
                 if match_g:
                     self.safety_constraint = match_g.group(1).strip()
-                    # Remove the G(...) part to process the rest of the string
                     rest = rest.replace(match_g.group(0), "").strip()
-                    # Clean up leading '&' if it exists after removal
-                    if rest.startswith("&"): 
+                    if rest.startswith("&"):
                         rest = rest[1:].strip()
-
-                # If there is still string left, it must be the nested F[...]
                 if rest:
                     self.next_node = RecursiveSTLNode(rest)
 
@@ -48,7 +42,6 @@ class RecursiveSTLNode:
 # ==========================================
 class STLConductor:
     def __init__(self, stl_string, predicates):
-        print(f"Parsing STL: {stl_string}")
         self.root_node = RecursiveSTLNode(stl_string)
         self.current_node = self.root_node
         self.predicates = predicates
@@ -149,9 +142,6 @@ class SafeFunnelController:
 # 4. PREDICATE DEFINITIONS
 # ==========================================
 def define_predicates():
-    """
-    Returns dictionary of conditions for the Conductor to check.
-    """
     return {
         # Condition: End Effector is close to Object
         "approach": lambda o: np.linalg.norm(o['observation'][:3] - o['achieved_goal'][:3]) < 0.001,

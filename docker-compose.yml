@@ -11,7 +11,7 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix
     command: bash -c "
       cd src/behavior_cloning && 
-      python -B bc.py"
+      python -B bc_main.py"
     stdin_open: true    
     tty: true
     runtime: nvidia
