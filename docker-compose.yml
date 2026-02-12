@@ -11,7 +11,7 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix
     command: bash -c "
       cd src/ && 
-      python -B train_RL_with_BC.py"
+      python -B train_RL_with_BC_max.py"
     stdin_open: true    
     tty: true
     runtime: nvidia

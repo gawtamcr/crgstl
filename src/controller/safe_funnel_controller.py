@@ -10,7 +10,6 @@ class SafeFunnelController:
     
     def __init__(self, position_gain: float = 8.0, obstacle_pos: Optional[np.ndarray] = None, obstacle_radius: float = 0.10):
         self.position_gain = position_gain
-        # Default obstacle position from stl_pf.py if not provided
         self.obstacle_pos = obstacle_pos if obstacle_pos is not None else np.array([0.0, 0.0, 0.2])
         self.obstacle_radius = obstacle_radius
     

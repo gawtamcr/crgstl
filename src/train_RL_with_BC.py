@@ -15,7 +15,7 @@ def main():
     
     user_stl = "F[0,10.0](approach & F[0,2.0](grasp & F[0,5.0](move)))"
     
-    base_env = gym.make('PandaPickAndPlace-v3', render_mode="human")
+    base_env = gym.make('PandaPickAndPlace-v3', render_mode="rgb_array")
     env = STLGymWrapper(base_env, user_stl, define_predicates())
     env = Monitor(env)  
     env.unwrapped.task.distance_threshold = 0.05
@@ -39,7 +39,7 @@ def main():
     ##########################
     print("Phase 1: Collecting Expert Demonstrations =================================")
     expert = SafeFunnelController(position_gain=8.0)
-    obs, actions, next_obs, rewards, dones = collect_expert_transitions(env, expert, n_episodes=10, verbose=True)
+    obs, actions, next_obs, rewards, dones = collect_expert_transitions(env, expert, n_episodes=100, verbose=True)
 
     print(f"\nPre-filling replay buffer with {len(obs)} expert transitions...")
     for i in range(len(obs)):

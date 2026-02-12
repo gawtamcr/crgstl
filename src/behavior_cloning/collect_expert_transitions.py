@@ -48,7 +48,7 @@ def collect_expert_transitions(env: STLGymWrapper, controller: SafeFunnelControl
             aug_obs = next_aug_obs
             done = terminated or truncated
             ep_reward += reward
-            time.sleep(0.05)  # Slow down for visualization
+          #  time.sleep(0.05)  # Slow down for visualization
             if step_info.get('success', False):
                 successful_episodes += 1
         

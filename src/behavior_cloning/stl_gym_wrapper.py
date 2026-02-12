@@ -137,4 +137,6 @@ class STLGymWrapper(gym.Wrapper):
             info['timeout'] = True
 
         aug_obs = self._get_aug_obs(obs_dict, (phase, safety, t_left))
+
+        # reward *= 0.1 # Scale reward for stability
         return aug_obs, reward, terminated, truncated, info
