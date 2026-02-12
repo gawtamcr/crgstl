@@ -2,12 +2,14 @@ import gymnasium as gym
 import panda_gym
 from stable_baselines3 import SAC
 from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.callbacks import CheckpointCallback
 
 from common.predicates import define_predicates
 from behavior_cloning.stl_gym_wrapper import STLGymWrapper
 from controller.safe_funnel_controller import SafeFunnelController
 from behavior_cloning.collect_expert_transitions import collect_expert_transitions
 from behavior_cloning.stl_logging import STLLoggingCallback
+import os
 
 def main():
     
@@ -47,15 +49,18 @@ def main():
     ##########################
     print("Phase 2: SAC Training with Expert-Seeded Buffer =================================")
     phase_callback = STLLoggingCallback(verbose=1)
+    checkpoint_callback = CheckpointCallback(   save_freq=50_000, 
+                                                save_path="./../models/training/sac_checkpoints/", 
+                                                name_prefix="sac_stl")
     print("\nStarting training for 200,000 timesteps...")
     model.learn(    total_timesteps=200_000,
-                    callback=phase_callback,
+                    callback=[phase_callback, checkpoint_callback],
                     log_interval=10,
                 )
-    model_path = "./../models/training/sac_panda_stl_expert_v1"
-    model.save(model_path)
-    print(f"\nModel saved to: {model_path}")
-
+    base_path = "./../models/training/sac_RL_withBC_v"
+    model.save(f"{base_path}{max([int(f.split('_v')[1].split('.')[0]) for f in os.listdir('./../models/training/') if f.startswith('sac_RL_withBC_v')] or [0]) + 1}")
+    print(f"Model saved to {base_path} with versioning.")
+    
     ###########################
 
     env.close()

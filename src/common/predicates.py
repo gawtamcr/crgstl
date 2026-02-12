@@ -2,12 +2,6 @@ import numpy as np
 from typing import Dict, Callable
 
 def define_predicates() -> Dict[str, Callable]:
-    """
-    Define phase completion predicates.
-    
-    Returns:
-        Dictionary mapping phase names to predicate functions
-    """
     return {
         "approach": lambda o: np.linalg.norm(o['observation'][:3] - o['achieved_goal'][:3]) < 0.015,
         "grasp": lambda o: True, # o['achieved_goal'][2] > 0.045,  # Object lifted
