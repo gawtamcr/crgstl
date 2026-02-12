@@ -24,13 +24,13 @@ def collect_expert_transitions(env: STLGymWrapper, controller: SafeFunnelControl
         while not done:
             # Get raw observation for expert controller
             raw_obs = env.get_wrapper_attr('last_obs_dict')
-            conductor = env.get_wrapper_attr('conductor')
+            planner = env.get_wrapper_attr('planner')
             
-            # Get current phase info from conductor (updated in reset/step)
-            current_node = conductor.current_node
+            # Get current phase info from planner (updated in reset/step)
+            current_node = planner.current_node
             phase = current_node.phase_name
             safety = current_node.safety_constraint
-            t_left = max(0.0, current_node.max_time - (env.get_wrapper_attr('sim_time') - conductor.phase_start_time))
+            t_left = max(0.0, current_node.max_time - (env.get_wrapper_attr('sim_time') - planner.phase_start_time))
             
             # Get expert action
             action = controller.get_action(phase, safety, raw_obs, t_left)

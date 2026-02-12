@@ -2,7 +2,7 @@ import gymnasium as gym
 import numpy as np
 from typing import Dict, Callable, Tuple, Optional
 
-from common.stl_conductor import STLConductor
+from common.stl_planner import STLPlanner
 
 class STLGymWrapper(gym.Wrapper):
     """
@@ -18,7 +18,7 @@ class STLGymWrapper(gym.Wrapper):
         super().__init__(env)
         self.stl_string = stl_string
         self.predicates = predicates
-        self.conductor = STLConductor(stl_string, predicates)
+        self.planner = STLPlanner(stl_string, predicates)
         self.sim_time: float = 0.0
         self.dt: float = 0.04  # Simulation timestep (25 Hz)
         self.last_obs_dict = None
@@ -51,7 +51,7 @@ class STLGymWrapper(gym.Wrapper):
         rel_target = target - ee_pos
         
         # Normalize time by max phase duration
-        time_feat = np.array([t_left / self.conductor.current_node.max_time], dtype=np.float32)
+        time_feat = np.array([t_left / self.planner.current_node.max_time], dtype=np.float32)
         
         # Safety flag (currently only checks for avoid_zone constraint)
         safety_feat = np.array([1.0 if safety == "avoid_zone" else 0.0], dtype=np.float32)
@@ -59,14 +59,14 @@ class STLGymWrapper(gym.Wrapper):
         return np.concatenate([base_obs, rel_target, time_feat, safety_feat]).astype(np.float32)
 
     def reset(self, seed: Optional[int] = None, options: Optional[Dict] = None) -> Tuple[np.ndarray, Dict]:
-        """Reset environment and conductor."""
+        """Reset environment and planner."""
         obs_dict, info = self.env.reset(seed=seed, options=options)
         self.last_obs_dict = obs_dict
-        self.conductor.reset()
+        self.planner.reset()
         self.sim_time = 0.0
         self.prev_phase = None
         
-        phase_info = self.conductor.update(obs_dict, self.sim_time)
+        phase_info = self.planner.update(obs_dict, self.sim_time)
         self.prev_phase = phase_info[0]
         
         return self._get_aug_obs(obs_dict, phase_info), info
@@ -77,8 +77,8 @@ class STLGymWrapper(gym.Wrapper):
         self.last_obs_dict = obs_dict
         self.sim_time += self.dt
         
-        # Update conductor
-        phase, safety, t_left = self.conductor.update(obs_dict, self.sim_time)
+        # Update planner
+        phase, safety, t_left = self.planner.update(obs_dict, self.sim_time)
         
         # Extract positions
         ee_pos = obs_dict['observation'][:3]
@@ -126,12 +126,12 @@ class STLGymWrapper(gym.Wrapper):
         self.prev_phase = phase
         
         # Terminal conditions
-        if self.conductor.finished:
+        if self.planner.finished:
             terminated = True
             reward += 200.0  # Task completion bonus
             info['success'] = True
             
-        if self.conductor.failed_timeout:
+        if self.planner.failed_timeout:
             terminated = True
             reward -= 50.0  # Timeout penalty
             info['timeout'] = True

@@ -2,7 +2,7 @@ from typing import Dict, Callable, Tuple, Optional
 
 from common.stl_parsing import RecursiveSTLNode
 
-class STLConductor:
+class STLPlanner:
     def __init__(self, stl_string: str, predicates: Dict[str, Callable]):
         print(f"Parsing STL: {stl_string}")
         self.root_node = RecursiveSTLNode(stl_string)
@@ -40,7 +40,7 @@ class STLConductor:
         return self.current_node.phase_name, self.current_node.safety_constraint, max(0.0, time_left)
 
     def reset(self) -> None:
-        """Reset conductor to initial state."""
+        """Reset planner to initial state."""
         self.current_node = self.root_node
         self.phase_start_time = 0.0
         self.finished = False

@@ -22,10 +22,10 @@ class STLLoggingCallback(BaseCallback):
     def _on_step(self) -> bool:
         # 1. Log Phase Information
         try:
-            conductor = self.training_env.envs[0].get_wrapper_attr('conductor')
-            if conductor:
-                phase_name = conductor.current_node.phase_name
-                phase_idx = 3 if conductor.finished else self.phase_map.get(phase_name, -1)
+            planner = self.training_env.envs[0].get_wrapper_attr('planner')
+            if planner:
+                phase_name = planner.current_node.phase_name
+                phase_idx = 3 if planner.finished else self.phase_map.get(phase_name, -1)
                 self.logger.record("stl/current_phase_idx", phase_idx)
         except Exception:
             pass
