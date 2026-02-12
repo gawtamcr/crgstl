@@ -1,7 +1,8 @@
 import time
 from typing import List, Tuple
-from stl_gym_wrapper import STLGymWrapper
-from safe_funnel_controller import SafeFunnelController
+
+from behavior_cloning.stl_gym_wrapper import STLGymWrapper
+from controller.safe_funnel_controller import SafeFunnelController
 
 def collect_expert_transitions(env: STLGymWrapper, controller: SafeFunnelController, 
                                 n_episodes: int = 20, verbose: bool = True) -> Tuple[List, List, List, List, List]:

@@ -3,9 +3,9 @@ import panda_gym
 import time
 import numpy as np
 
-from predicates import define_predicates
-from stl_conductor import STLConductor
-from safe_funnel_controller import SafeFunnelController
+from common.predicates import define_predicates
+from common.stl_conductor import STLConductor
+from controller.safe_funnel_controller import SafeFunnelController
 
 def run_simulation():
     env = gym.make('PandaPickAndPlace-v3', render_mode='human')

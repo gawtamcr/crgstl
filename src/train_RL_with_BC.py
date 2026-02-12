@@ -9,11 +9,11 @@ import panda_gym
 from stable_baselines3 import SAC
 from stable_baselines3.common.monitor import Monitor
 
-from predicates import define_predicates
-from stl_gym_wrapper import STLGymWrapper
-from safe_funnel_controller import SafeFunnelController
-from collect_expert_transitions import collect_expert_transitions
-from stl_logging import STLLoggingCallback
+from common.predicates import define_predicates
+from behavior_cloning.stl_gym_wrapper import STLGymWrapper
+from controller.safe_funnel_controller import SafeFunnelController
+from behavior_cloning.collect_expert_transitions import collect_expert_transitions
+from behavior_cloning.stl_logging import STLLoggingCallback
 
 def main():
     """Main training pipeline."""
@@ -38,7 +38,7 @@ def main():
         "MlpPolicy", 
         env, 
         verbose=1, 
-        tensorboard_log="./sac_stl_tensorboard/",
+        tensorboard_log="./../models/training/sac_crgstl_tensorboard/",
         buffer_size=100_000,
         learning_rate=3e-4,
         batch_size=256,

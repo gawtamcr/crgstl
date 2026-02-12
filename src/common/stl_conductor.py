@@ -1,5 +1,6 @@
 from typing import Dict, Callable, Tuple, Optional
-from stl_parsing import RecursiveSTLNode
+
+from common.stl_parsing import RecursiveSTLNode
 
 class STLConductor:
     def __init__(self, stl_string: str, predicates: Dict[str, Callable]):

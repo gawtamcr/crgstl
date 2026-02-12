@@ -10,8 +10,8 @@ services:
       - .:/app
       - /tmp/.X11-unix:/tmp/.X11-unix
     command: bash -c "
-      cd src/behavior_cloning && 
-      python -B bc_main.py"
+      cd src/ && 
+      python -B train_RL_with_BC.py"
     stdin_open: true    
     tty: true
     runtime: nvidia

@@ -1,7 +1,8 @@
 import gymnasium as gym
 import numpy as np
 from typing import Dict, Callable, Tuple, Optional
-from stl_conductor import STLConductor
+
+from common.stl_conductor import STLConductor
 
 class STLGymWrapper(gym.Wrapper):
     """
