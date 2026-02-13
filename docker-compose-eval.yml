@@ -11,7 +11,7 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix
     command: bash -c "
       cd src/ && 
-      python -B run_PF_controller.py"
+      python -B evaluate_RL_custom.py"
     stdin_open: true    
     tty: true
     runtime: nvidia
