@@ -1,7 +1,7 @@
 services:
-  tgpo:
+  crgstl:
     image: crgstl
-    # container_name: tgpo_train_gpu_container
+    container_name: crgstl_container_1
     network_mode: host
     environment:
       - DISPLAY=${DISPLAY}
@@ -11,7 +11,24 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix
     command: bash -c "
       cd src/ && 
-      python -B train_RL_with_BC_max.py"
+      python -B train_RL_with_BC.py"
+    stdin_open: true    
+    tty: true
+    runtime: nvidia
+  
+  crgstl-2:
+    image: crgstl
+    container_name: crgstl_container_2
+    network_mode: host
+    environment:
+      - DISPLAY=${DISPLAY}
+      - NVIDIA_VISIBLE_DEVICES=all
+    volumes:
+      - .:/app
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    command: bash -c "
+      cd src/ && 
+      python -B train_RL_with_BC.py"
     stdin_open: true    
     tty: true
     runtime: nvidia

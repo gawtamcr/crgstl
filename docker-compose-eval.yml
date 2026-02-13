@@ -1,0 +1,17 @@
+services:
+  crgstl-eval:
+    image: crgstl
+    container_name: crgstl_eval_container_1
+    network_mode: host
+    environment:
+      - DISPLAY=${DISPLAY}
+      - NVIDIA_VISIBLE_DEVICES=all
+    volumes:
+      - .:/app
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    command: bash -c "
+      cd src/ && 
+      python -B evaluate_RL.py"
+    stdin_open: true    
+    tty: true
+    runtime: nvidia
