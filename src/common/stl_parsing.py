@@ -1,35 +1,65 @@
 import re
-from typing import Optional
+from typing import Tuple, List
+from common.stl_graph import STLNode, Predicate, And, Or, Eventually, Always
 
-class RecursiveSTLNode:
-    """
-    Represents a node in the STL specification tree.
-    Parses temporal formulas like F[t_min,t_max](phase & G(safety) & next_formula)
-    """
-    def __init__(self, stl_string: str):
-        self.phase_name: Optional[str] = None
-        self.safety_constraint: Optional[str] = None
-        self.min_time: float = 0.0
-        self.max_time: float = 0.0
-        self.next_node: Optional['RecursiveSTLNode'] = None
-        self._parse(stl_string.strip())
+def parse_stl(formula: str) -> STLNode:
+    """Parses an STL string into an STLNode tree."""
+    formula = formula.strip()
+    # Tokenize: Matches F[...], G[...], (, ), &, |, or words
+    token_pattern = re.compile(r"([FG]\[[^\]]+\]|[()&|]|[a-zA-Z0-9_]+)")
+    tokens = [t for t in token_pattern.findall(formula) if t.strip()]
+    
+    if not tokens:
+        raise ValueError("Empty STL formula")
 
-    def _parse(self, s: str) -> None:
-        """Parse STL string into phase components."""
-        # Match: F[min,max](phase & G(safety) & next)
-        match_f = re.match(r"F\[([\d\.]+),([\d\.]+)\]\s*\(([^&]+)(?:&\s*(.*))?\)", s)
-        if match_f:
-            t_min, t_max, name, rest = match_f.groups()
-            self.min_time = float(t_min)
-            self.max_time = float(t_max)
-            self.phase_name = name.strip()
+    def parse_expr(index: int) -> Tuple[STLNode, int]:
+        # Parse terms separated by |
+        lhs, index = parse_term(index)
+        while index < len(tokens) and tokens[index] == '|':
+            index += 1
+            rhs, index = parse_term(index)
+            lhs = Or(lhs, rhs)
+        return lhs, index
 
-            if rest:
-                match_g = re.search(r"G\(([^)]+)\)", rest)
-                if match_g:
-                    self.safety_constraint = match_g.group(1).strip()
-                    rest = rest.replace(match_g.group(0), "").strip()
-                    if rest.startswith("&"):
-                        rest = rest[1:].strip()
-                if rest:
-                    self.next_node = RecursiveSTLNode(rest)
+    def parse_term(index: int) -> Tuple[STLNode, int]:
+        # Parse factors separated by &
+        lhs, index = parse_factor(index)
+        while index < len(tokens) and tokens[index] == '&':
+            index += 1
+            rhs, index = parse_factor(index)
+            lhs = And(lhs, rhs)
+        return lhs, index
+
+    def parse_factor(index: int) -> Tuple[STLNode, int]:
+        if index >= len(tokens):
+            raise ValueError("Unexpected end of formula")
+            
+        token = tokens[index]
+        index += 1
+        
+        if token == '(':
+            node, index = parse_expr(index)
+            if index >= len(tokens) or tokens[index] != ')':
+                raise ValueError("Missing closing parenthesis")
+            return node, index + 1
+            
+        # Temporal Operators: F, G, F[0,10], G[0,5]
+        if token == 'F' or token.startswith('F[') or token == 'G' or token.startswith('G['):
+            op_type = Eventually if token.startswith('F') else Always
+            t_start, t_end = 0.0, float('inf')
+            
+            if '[' in token:
+                interval = token[token.find('[')+1 : token.find(']')]
+                parts = interval.split(',')
+                t_start = float(parts[0])
+                if len(parts) > 1:
+                    t_end = float(parts[1])
+            
+            child, index = parse_factor(index)
+            return op_type(child, t_start, t_end), index
+            
+        # Predicate
+        return Predicate(token), index
+
+    root, _ = parse_expr(0)
+    return root

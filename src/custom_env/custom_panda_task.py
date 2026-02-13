@@ -30,6 +30,13 @@ class STLPickAndPlaceTask(Task):
             position=np.array([0.0, 1.0, 0.0]),
             rgba_color=np.array([0.1, 0.9, 0.1, 1.0]),
         )
+        # self.sim.create_sphere(
+        #     body_name="object",
+        #     radius=0.02,
+        #     mass=1.0,
+        #     position=np.array([0.2, 1.0, 0.0]),
+        #     rgba_color=np.array([0.1, 0.1, 0.9, 1.0]),
+        # )
         self.sim.create_box(
             body_name="target",
             half_extents=np.array([0.02, 0.02, 0.02]),
@@ -132,30 +139,30 @@ class STLPickAndPlaceEnv(RobotTaskEnv):
             
         return obs, reward, terminated, truncated, info
 
-if __name__ == "__main__":
-    # Example usage
-    base_env = STLPickAndPlaceEnv(render_mode="human")
-    env = STLGymWrapper(base_env, base_env.stl_string, base_env.predicates)
+# if __name__ == "__main__":
+#     # Example usage
+#     base_env = STLPickAndPlaceEnv(render_mode="human")
+#     env = STLGymWrapper(base_env, base_env.stl_string, base_env.predicates)
     
-    # Load the trained model
-    # Note: The model expects the same observation space it was trained on.
-    model = SAC.load("../models/training/sac_RL_withBC_v3")
+#     # Load the trained model
+#     # Note: The model expects the same observation space it was trained on.
+#     model = SAC.load("../models/training/sac_RL_withBC_v3")
     
-    print(f"Task STL: {base_env.stl_string}")
+#     print(f"Task STL: {base_env.stl_string}")
     
-    obs, info = env.reset()
-    print("Environment reset. Starting loop...")
+#     obs, info = env.reset()
+#     print("Environment reset. Starting loop...")
     
-    for i in range(200):
-        action, _states = model.predict(obs, deterministic=True)
-        obs, reward, terminated, truncated, info = env.step(action)
+#     for i in range(200):
+#         action, _states = model.predict(obs, deterministic=True)
+#         obs, reward, terminated, truncated, info = env.step(action)
         
-        if i % 10 == 0:
-            print(f"Step {i}: Phase={info.get('phase')}, Reward={reward}")
+#         if i % 10 == 0:
+#             print(f"Step {i}: Phase={info.get('phase')}, Reward={reward}")
 
-        time.sleep(0.05) # Slow down for visualization
-        if terminated or truncated:
-            print(f"Episode finished at step {i}. Success: {info.get('is_success')}")
-            obs, info = env.reset()
+#         time.sleep(0.05) # Slow down for visualization
+#         if terminated or truncated:
+#             print(f"Episode finished at step {i}. Success: {info.get('is_success')}")
+#             obs, info = env.reset()
             
-    env.close()
+#     env.close()

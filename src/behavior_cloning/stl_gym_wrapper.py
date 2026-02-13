@@ -1,142 +1,179 @@
 import gymnasium as gym
 import numpy as np
-from typing import Dict, Callable, Tuple, Optional
+from typing import Dict, Callable, Optional
 
-from common.stl_planner import STLPlanner
+from common.stl_graph import STLNode, TemporalOp
+from common.stl_parsing import parse_stl
+from common.stl_conductor import STLConductor
+from common.reward_registry import RewardRegistry
 
 class STLGymWrapper(gym.Wrapper):
-    """
-    Wraps Panda environment to provide STL-augmented observations and shaped rewards.
-    
-    Augmented observation includes:
-    - Base robot state (joint positions, velocities, etc.)
-    - Relative target position (changes based on current phase)
-    - Normalized time remaining in current phase
-    - Safety flag (binary indicator for safety constraints)
-    """
-    def __init__(self, env: gym.Env, stl_string: str, predicates: Dict[str, Callable]):
+    def __init__(self, env, stl_formula: str, predicates: Dict[str, Callable], reward_registry: Optional[RewardRegistry] = None):
         super().__init__(env)
-        self.stl_string = stl_string
-        self.predicates = predicates
-        self.planner = STLPlanner(stl_string, predicates)
-        self.sim_time: float = 0.0
-        self.dt: float = 0.04  # Simulation timestep (25 Hz)
+        
+        # 1. Parse STL
+        self.stl_graph = parse_stl(stl_formula)
+        
+        # Flatten graph for vectorization (Fixed DFS order)
+        self.node_list = []
+        self._flatten_graph(self.stl_graph)
+        
+        # 2. Setup Conductor
+        self.conductor = STLConductor(self.stl_graph, predicates)
+        
+        # 3. Setup Rewards
+        self.reward_registry = reward_registry if reward_registry else RewardRegistry()
+        
+        # Simulation time tracking
+        self.sim_time = 0.0
+        self.dt = getattr(env.unwrapped, 'dt', 0.05) # Default to 0.05s if not found
+        
+        # 4. Update Observation Space
+        # We add a 'stl_state' vector: [active, satisfied, violated, time_ratio] per node
+        self.features_per_node = 4
+        self.stl_vec_size = len(self.node_list) * self.features_per_node
+        
+        # Handle Dict observation space (standard for PandaGym)
+        if isinstance(self.env.observation_space, gym.spaces.Dict):
+            new_spaces = self.env.observation_space.spaces.copy()
+            new_spaces['stl_state'] = gym.spaces.Box(
+                low=0.0, high=1.0, shape=(self.stl_vec_size,), dtype=np.float32
+            )
+            self.observation_space = gym.spaces.Dict(new_spaces)
         self.last_obs_dict = None
 
-        # Augmented observation space
-        # Original observation + relative_target (3D) + time_remaining (1D) + safety_flag (1D)
-        orig_shape = env.observation_space['observation'].shape[0]
-        self.observation_space = gym.spaces.Box(
-            low=-np.inf, high=np.inf, shape=(orig_shape + 5,), dtype=np.float32
-        )
+    def reset(self, **kwargs):
+        obs, info = self.env.reset(**kwargs)
         
-        # Track previous phase for transition rewards
-        self.prev_phase: Optional[str] = None
-
-    def _get_aug_obs(self, obs_dict: Dict, phase_info: Tuple[str, Optional[str], float]) -> np.ndarray:
-        """Construct augmented observation vector."""
-        phase, safety, t_left = phase_info
-        base_obs = obs_dict['observation']
-        
-        # Determine target based on current phase
-        if phase in ["approach", "grasp"]:
-            # Target is object position
-            target = obs_dict['achieved_goal'][:3]
-        else:
-            # Target is final goal position
-            target = obs_dict['desired_goal'][:3]
-        
-        # Robot end-effector position
-        ee_pos = base_obs[:3]
-        rel_target = target - ee_pos
-        
-        # Normalize time by max phase duration
-        time_feat = np.array([t_left / self.planner.current_node.max_time], dtype=np.float32)
-        
-        # Safety flag (currently only checks for avoid_zone constraint)
-        safety_feat = np.array([1.0 if safety == "avoid_zone" else 0.0], dtype=np.float32)
-        
-        return np.concatenate([base_obs, rel_target, time_feat, safety_feat]).astype(np.float32)
-
-    def reset(self, seed: Optional[int] = None, options: Optional[Dict] = None) -> Tuple[np.ndarray, Dict]:
-        """Reset environment and planner."""
-        obs_dict, info = self.env.reset(seed=seed, options=options)
-        self.last_obs_dict = obs_dict
-        self.planner.reset()
         self.sim_time = 0.0
-        self.prev_phase = None
+        self.conductor.reset()
         
-        phase_info = self.planner.update(obs_dict, self.sim_time)
-        self.prev_phase = phase_info[0]
+        # Initial update to set active nodes
+        self.conductor.update(obs, self.sim_time)
         
-        return self._get_aug_obs(obs_dict, phase_info), info
+        # Augment Observation
+        obs['stl_state'] = self._get_stl_vector()
+        self.last_obs_dict = obs
+        
+        return obs, info
 
-    def step(self, action: np.ndarray) -> Tuple[np.ndarray, float, bool, bool, Dict]:
-        """Execute action and compute STL-shaped reward."""
-        obs_dict, _, terminated, truncated, info = self.env.step(action)
-        self.last_obs_dict = obs_dict
+    def step(self, action):
+        obs, reward, terminated, truncated, info = self.env.step(action)
+        
+        # Update Time
         self.sim_time += self.dt
         
-        # Update planner
-        phase, safety, t_left = self.planner.update(obs_dict, self.sim_time)
+        # Update STL State
+        violated, penalty_flag, objectives, safety_monitors = self.conductor.update(obs, self.sim_time)
         
-        # Extract positions
-        ee_pos = obs_dict['observation'][:3]
-        obj_pos = obs_dict['achieved_goal'][:3]
-        goal_pos = obs_dict['desired_goal'][:3]
+        # Augment Observation
+        obs['stl_state'] = self._get_stl_vector()
+        self.last_obs_dict = obs
         
-        dist_to_obj = np.linalg.norm(ee_pos - obj_pos)
-        dist_obj_to_goal = np.linalg.norm(obj_pos - goal_pos)
+        # --- Calculate STL Reward ---
+        stl_reward = 0.0
         
-        # Dense reward shaping based on current phase
-        reward = 0.0
-        
-        if phase == "approach":
-            # Encourage moving end-effector toward object
-            reward -= dist_to_obj * 5.0
-            # Small penalty for premature closing
-            if action[3] < 0:  # Gripper closing
-                reward -= 1.0
-                
-        elif phase == "grasp":
-            # Encourage contact with object
-            reward -= dist_to_obj * 3.0
-            # Reward lifting object
-            if obj_pos[2] > 0.025:  # Object off table
-                reward += (obj_pos[2] - 0.025) * 100.0
-            # Encourage closing gripper during grasp
-            if action[3] > 0:  # Gripper opening
-                reward -= 2.0
-                
-        elif phase == "move":
-            # Encourage moving object to goal
-            reward -= dist_obj_to_goal * 8.0
-            # Maintain object height (avoid dropping)
-            if obj_pos[2] < 0.025:
-                reward -= 10.0
-            # Penalty for opening gripper prematurely
-            if action[3] > 0:
-                reward -= 5.0
-
-        # Phase transition bonus
-        if phase != self.prev_phase and self.prev_phase is not None:
-            reward += 50.0
-            info['phase_transition'] = f"{self.prev_phase} -> {phase}"
-        
-        self.prev_phase = phase
-        
-        # Terminal conditions
-        if self.planner.finished:
-            terminated = True
-            reward += 200.0  # Task completion bonus
-            info['success'] = True
+        # 1. Progress Reward (Dense)
+        # Sum rewards for all currently active objectives (e.g., approach, grasp)
+        for obj in objectives:
+            stl_reward += self.reward_registry.get_reward(obj, obs)
             
-        if self.planner.failed_timeout:
+        # 2. Safety Penalty (Soft)
+        # Apply penalties for active safety constraints (e.g., keep bounds)
+        for safe in safety_monitors:
+            stl_reward -= self.reward_registry.get_penalty(safe, obs)
+            
+        # 3. Violation Penalty (Hard)
+        # If a hard constraint (Always) is violated or a deadline is missed
+        if violated:
+            stl_reward -= 10.0  # Significant penalty
+            # We do NOT terminate, as requested, to allow learning recovery/avoidance
+            # unless the base environment terminated.
+        
+        # 4. Success Bonus (New)
+        # If the root node is satisfied, the entire specification is met.
+        if self.conductor.node_status[self.conductor.root]['satisfied']:
+            stl_reward += 50.0
             terminated = True
-            reward -= 50.0  # Timeout penalty
-            info['timeout'] = True
+            info['is_success'] = True
+            info['success'] = True
+        
+        total_reward = reward + stl_reward
+        
+        # Add debug info
+        info['stl_objectives'] = objectives
+        info['stl_violated'] = violated
+        
+        return obs, total_reward, terminated, truncated, info
 
-        aug_obs = self._get_aug_obs(obs_dict, (phase, safety, t_left))
+    def get_current_phase_info(self):
+        """
+        Returns (phase_name, safety_constraints, time_left) for the expert controller.
+        Derived from the internal STLConductor state.
+        """
+        conductor = self.conductor
+        
+        # 1. Phase Name
+        if not conductor.current_objectives:
+            phase = "DONE"
+        else:
+            phase = conductor.current_objectives[0] # Take the first active objective
+            
+        # 2. Safety Constraints
+        safety = conductor.active_safety if conductor.active_safety else None
+        
+        # 3. Time Left
+        # Find the tightest deadline among active Eventually nodes
+        min_time_left = float('inf')
+        found_active_temporal = False
+        
+        for node, status in conductor.node_status.items():
+            if status.get('active') and not status.get('satisfied') and not status.get('violated'):
+                # Check if it is a TemporalOp with a deadline (Eventually)
+                if isinstance(node, TemporalOp) and node.name == "F" and node.t_end != float('inf'):
+                    elapsed = self.sim_time - status.get('activation_time', 0.0)
+                    t_left = node.t_end - elapsed
+                    if t_left < min_time_left:
+                        min_time_left = t_left
+                        found_active_temporal = True
+        
+        if not found_active_temporal:
+            time_left = 10.0 # Default fallback if no explicit deadline
+        else:
+            time_left = max(0.0, min_time_left)
+            
+        return phase, safety, time_left
 
-        # reward *= 0.1 # Scale reward for stability
-        return aug_obs, reward, terminated, truncated, info
+    def _flatten_graph(self, node: STLNode):
+        """Recursively collects nodes to establish a fixed vector order."""
+        self.node_list.append(node)
+        for child in node.children:
+            self._flatten_graph(child)
+
+    def _get_stl_vector(self) -> np.ndarray:
+        """
+        Encodes the current STL state into a vector.
+        Format per node: [is_active, is_satisfied, is_violated, time_ratio]
+        """
+        vec = []
+        for node in self.node_list:
+            status = self.conductor.node_status.get(node, {})
+            
+            active = 1.0 if status.get('active', False) else 0.0
+            satisfied = 1.0 if status.get('satisfied', False) else 0.0
+            violated = 1.0 if status.get('violated', False) else 0.0
+            
+            # Time Ratio (0.0 to 1.0)
+            time_ratio = 0.0
+            if active and isinstance(node, TemporalOp) and node.t_end != float('inf'):
+                # How far are we into the deadline?
+                elapsed = self.sim_time - status.get('activation_time', 0.0)
+                # Normalize: 0.0 (start) -> 1.0 (deadline)
+                time_ratio = np.clip(elapsed / node.t_end, 0.0, 1.0)
+            elif active and isinstance(node, TemporalOp):
+                 # For infinite horizon, maybe use a sigmoid or just 0
+                 time_ratio = 0.0
+            
+            vec.extend([active, satisfied, violated, time_ratio])
+            
+        return np.array(vec, dtype=np.float32)

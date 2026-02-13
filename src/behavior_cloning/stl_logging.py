@@ -22,11 +22,11 @@ class STLLoggingCallback(BaseCallback):
     def _on_step(self) -> bool:
         # 1. Log Phase Information
         try:
-            planner = self.training_env.envs[0].get_wrapper_attr('planner')
-            if planner:
-                phase_name = planner.current_node.phase_name
-                phase_idx = 3 if planner.finished else self.phase_map.get(phase_name, -1)
-                self.logger.record("stl/current_phase_idx", phase_idx)
+            # Use env_method to call get_current_phase_info on the first env in the VecEnv
+            phase_info = self.training_env.env_method('get_current_phase_info', indices=0)[0]
+            phase_name = phase_info[0]
+            phase_idx = 3 if phase_name == "DONE" else self.phase_map.get(phase_name, -1)
+            self.logger.record("stl/current_phase_idx", phase_idx)
         except Exception:
             pass
 

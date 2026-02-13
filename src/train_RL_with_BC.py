@@ -1,11 +1,13 @@
 import gymnasium as gym
 import panda_gym
+import numpy as np
 from stable_baselines3 import SAC
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.callbacks import CheckpointCallback
 
 from common.predicates import define_predicates
 from behavior_cloning.stl_gym_wrapper import STLGymWrapper
+from common.reward_registry import RewardRegistry
 from controller.safe_funnel_controller import SafeFunnelController
 from behavior_cloning.collect_expert_transitions import collect_expert_transitions
 from behavior_cloning.stl_logging import STLLoggingCallback
@@ -13,15 +15,47 @@ import os
 
 def main():
     
-    user_stl = "F[0,10.0](approach & F[0,2.0](grasp & F[0,5.0](move)))"
+    # Flattened STL to prevent phase reversion when 'approach' becomes False during movement.
+    # Times are cumulative/absolute from the start.
+    user_stl = "F[0,5.0](approach) & F[0,10.0](grasp) & F[0,15.0](move)"
     
-    base_env = gym.make('PandaPickAndPlace-v3', render_mode="rgb_array")
-    env = STLGymWrapper(base_env, user_stl, define_predicates())
+    # --- Define Rewards ---
+    # We use dense rewards to guide the agent when specific predicates are active.
+    registry = RewardRegistry()
+    
+    # 1. Approach: Minimize distance to object
+    # obs['observation'][0:3] is EE position, obs['achieved_goal'][0:3] is object position (in PickAndPlace)
+    # Actually in PandaPickAndPlace-v3: 
+    # 'observation' contains [ee_pos, ee_vel, fingers_width, obj_pos, obj_rot, obj_vel, ...]
+    # 'achieved_goal' is object_position
+    # 'desired_goal' is target_position
+    
+    def reward_approach(obs):
+        # Distance between EE and Object
+        dist = np.linalg.norm(obs['observation'][:3] - obs['achieved_goal'][:3])
+        # Shaped reward: [0, 3.0] - Positive gradient to overcome step cost
+        return 3.0 * (1.0 - np.tanh(5.0 * dist))
+
+    def reward_move(obs):
+        # Distance between Object and Target
+        dist = np.linalg.norm(obs['achieved_goal'][:3] - obs['desired_goal'][:3])
+        return 3.0 * (1.0 - np.tanh(5.0 * dist))
+
+    registry.register_objective("approach", reward_approach)
+    registry.register_objective("move", reward_move)
+    
+    # Grasp Reward: Encourage holding (width between 0.005 and 0.05). Scale to match others.
+    registry.register_objective("grasp", lambda o: 3.0 if 0.005 < o['observation'][6] < 0.05 else 0.0)
+
+
+    base_env = gym.make('PandaPickAndPlace-v3', render_mode="human")
+    env = STLGymWrapper(base_env, user_stl, define_predicates(), reward_registry=registry)
     env = Monitor(env)  
     env.unwrapped.task.distance_threshold = 0.05
     
     print("Initializing SAC model...")
-    model = SAC(    "MlpPolicy", 
+    # Use MultiInputPolicy to handle Dict observation with 'stl_state'
+    model = SAC(    "MultiInputPolicy", 
                     env, 
                     verbose=1, 
                     tensorboard_log="./../models/training/sac_crgstl_tensorboard/",
