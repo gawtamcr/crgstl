@@ -2,6 +2,7 @@ import gymnasium as gym
 import panda_gym
 import numpy as np
 import os
+import time
 from stable_baselines3 import SAC
 from common.predicates import define_predicates
 from behavior_cloning.stl_gym_wrapper import STLGymWrapper
@@ -9,7 +10,7 @@ from behavior_cloning.stl_gym_wrapper import STLGymWrapper
 def evaluate():
     # Configuration
     user_stl = "F[0,10.0](approach & F[0,2.0](grasp & F[0,5.0](move)))"
-    model_path = "../models/IMPORTANT/sac_panda_stl_expert_v2"    
+    model_path = "../models/training/sac_RL_withBC_v3"    
     print(f"Loading model: {model_path}")
     
     # Setup Environment
@@ -34,6 +35,7 @@ def evaluate():
             obs, reward, terminated, truncated, info = env.step(action)
             total_reward += reward
             done = terminated or truncated
+            time.sleep(0.05)  # Slow down for better visualization
             env.render()
             
         # In PandaPickAndPlace, 'is_success' is usually in info
