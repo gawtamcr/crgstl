@@ -14,6 +14,6 @@ cd /Midgard/home/gawtam/stl/src
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/Midgard/home/gawtam/miniforge3
 
 wandb login
-$PYTHON -B train_RL_with_BC_wandb.py
+$PYTHON -B train_RL_with_BC_max_wandb.py
 
 # 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
