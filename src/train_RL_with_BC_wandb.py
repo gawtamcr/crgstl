@@ -18,7 +18,8 @@ def main():
 
     run = wandb.init(
         entity="gawtamcr-kth",
-        project="stl",
+        project="crgstl-wandb",
+        dir="./../models/",
         config={
             "algo": "SAC",
             "timesteps": 200_000,

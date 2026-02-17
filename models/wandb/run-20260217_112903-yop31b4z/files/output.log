@@ -1,0 +1,4 @@
+Parsing STL: F[0,10.0](approach & F[0,2.0](grasp & F[0,5.0](move)))
+Initializing SAC model...
+Using cuda device
+Wrapping the env in a DummyVecEnv.

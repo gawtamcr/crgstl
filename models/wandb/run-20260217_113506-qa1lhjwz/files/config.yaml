@@ -1,0 +1,350 @@
+_current_progress_remaining:
+    value: 1
+_custom_logger:
+    value: "False"
+_episode_num:
+    value: 0
+_last_episode_starts:
+    value: '[ True]'
+_last_obs:
+    value: |-
+        [[ 3.8439669e-02 -2.1944723e-12  1.9740014e-01  0.0000000e+00
+          -0.0000000e+00  0.0000000e+00  0.0000000e+00  1.0936224e-01
+           1.3949130e-01  2.0000000e-02  0.0000000e+00 -0.0000000e+00
+           0.0000000e+00  0.0000000e+00  0.0000000e+00  0.0000000e+00
+           0.0000000e+00  0.0000000e+00  0.0000000e+00  7.0922568e-02
+           1.3949130e-01 -1.7740014e-01  1.0000000e+00  0.0000000e+00]]
+_last_original_obs:
+    value: None
+_logger:
+    value: <stable_baselines3.common.logger.Logger object at 0x7f0e4bb167d0>
+_n_updates:
+    value: 0
+_num_timesteps_at_start:
+    value: 0
+_stats_window_size:
+    value: 100
+_total_timesteps:
+    value: 200000
+_vec_normalize_env:
+    value: None
+_wandb:
+    value:
+        cli_version: 0.23.0
+        code_path: code/src/train_RL_with_BC_wandb.py
+        e:
+            sis92gn6ch7mlhgsqo08iti9dxwdec8s:
+                codePath: src/train_RL_with_BC_wandb.py
+                codePathLocal: train_RL_with_BC_wandb.py
+                cpu_count: 48
+                cpu_count_logical: 48
+                cudaVersion: "12.0"
+                disk:
+                    /:
+                        total: "934505979904"
+                        used: "28972859392"
+                email: gawtamcr3@gmail.com
+                executable: /Midgard/home/gawtam/miniforge3/envs/stl/bin/python
+                git:
+                    commit: 612017721c1bbf91d64d3e0e8af23986a4363cf2
+                    remote: https://github.com/gawtamcr/crgstl.git
+                gpu: NVIDIA GeForce RTX 3080
+                gpu_count: 6
+                gpu_nvidia:
+                    - architecture: Ampere
+                      cudaCores: 8704
+                      memoryTotal: "10737418240"
+                      name: NVIDIA GeForce RTX 3080
+                      uuid: GPU-b6719ce7-96ea-d0a3-8d76-1625133fc2f0
+                    - architecture: Ampere
+                      cudaCores: 8704
+                      memoryTotal: "10737418240"
+                      name: NVIDIA GeForce RTX 3080
+                      uuid: GPU-fdd55492-3a91-6a7a-610d-a07d0a69755c
+                    - architecture: Ampere
+                      cudaCores: 8704
+                      memoryTotal: "10737418240"
+                      name: NVIDIA GeForce RTX 3080
+                      uuid: GPU-cfa7601a-67c7-83aa-be3b-22ad418732f5
+                    - architecture: Ampere
+                      cudaCores: 8704
+                      memoryTotal: "10737418240"
+                      name: NVIDIA GeForce RTX 3080
+                      uuid: GPU-f42406f6-cdf8-0b06-3a53-e8d1b605de5f
+                    - architecture: Ampere
+                      cudaCores: 8704
+                      memoryTotal: "10737418240"
+                      name: NVIDIA GeForce RTX 3080
+                      uuid: GPU-40a65a05-5ad4-b77d-fc87-1ae682bbc85f
+                    - architecture: Ampere
+                      cudaCores: 8704
+                      memoryTotal: "10737418240"
+                      name: NVIDIA GeForce RTX 3080
+                      uuid: GPU-7a904906-cca0-e594-e382-c5e259b182a3
+                host: arwen
+                memory:
+                    total: "540912373760"
+                os: Linux-5.10.0-21-amd64-x86_64-with-glibc2.31
+                program: /Midgard/home/gawtam/crgstl/src/train_RL_with_BC_wandb.py
+                python: CPython 3.10.19
+                root: ./../models/
+                slurm:
+                    checkpoint_image_dir: /var/slurm/checkpoint
+                    cluster_name: rpl_cluster
+                    cpus_on_node: "12"
+                    cpus_per_task: "12"
+                    gtids: "0"
+                    job_account: defaultusr
+                    job_cpus_per_node: "12"
+                    job_gid: "1295200087"
+                    job_gpus: 3,4,5,6
+                    job_id: "874539"
+                    job_name: run.sbatch
+                    job_nodelist: arwen
+                    job_num_nodes: "1"
+                    job_partition: pdebug
+                    job_qos: normal
+                    job_uid: "1295200087"
+                    job_user: gawtam
+                    jobid: "874539"
+                    localid: "0"
+                    mem_per_node: "131072"
+                    nnodes: "1"
+                    node_aliases: (null)
+                    nodeid: "0"
+                    nodelist: arwen
+                    prio_process: "0"
+                    procid: "0"
+                    submit_dir: /Midgard/home/gawtam/crgstl/src
+                    submit_host: moria
+                    task_pid: "2369083"
+                    tasks_per_node: "1"
+                    topology_addr: arwen
+                    topology_addr_pattern: node
+                    working_cluster: rpl_cluster:slurmctl1.rpl:6817:8192
+                startedAt: "2026-02-17T10:35:06.333140Z"
+                writerId: sis92gn6ch7mlhgsqo08iti9dxwdec8s
+        m: []
+        python_version: 3.10.19
+        t:
+            "1":
+                - 1
+            "2":
+                - 1
+            "3":
+                - 2
+                - 3
+                - 16
+                - 22
+                - 35
+            "4": 3.10.19
+            "5": 0.23.0
+            "12": 0.23.0
+            "13": linux-x86_64
+action_noise:
+    value: None
+action_space:
+    value: Box(-1.0, 1.0, (4,), float32)
+actor:
+    value: |-
+        Actor(
+          (features_extractor): FlattenExtractor(
+            (flatten): Flatten(start_dim=1, end_dim=-1)
+          )
+          (latent_pi): Sequential(
+            (0): Linear(in_features=24, out_features=256, bias=True)
+            (1): ReLU()
+            (2): Linear(in_features=256, out_features=256, bias=True)
+            (3): ReLU()
+          )
+          (mu): Linear(in_features=256, out_features=4, bias=True)
+          (log_std): Linear(in_features=256, out_features=4, bias=True)
+        )
+algo:
+    value: SAC
+batch_norm_stats:
+    value: '[]'
+batch_norm_stats_target:
+    value: '[]'
+batch_size:
+    value: 256
+buffer_size:
+    value: 100000
+critic:
+    value: |-
+        ContinuousCritic(
+          (features_extractor): FlattenExtractor(
+            (flatten): Flatten(start_dim=1, end_dim=-1)
+          )
+          (qf0): Sequential(
+            (0): Linear(in_features=28, out_features=256, bias=True)
+            (1): ReLU()
+            (2): Linear(in_features=256, out_features=256, bias=True)
+            (3): ReLU()
+            (4): Linear(in_features=256, out_features=1, bias=True)
+          )
+          (qf1): Sequential(
+            (0): Linear(in_features=28, out_features=256, bias=True)
+            (1): ReLU()
+            (2): Linear(in_features=256, out_features=256, bias=True)
+            (3): ReLU()
+            (4): Linear(in_features=256, out_features=1, bias=True)
+          )
+        )
+critic_target:
+    value: |-
+        ContinuousCritic(
+          (features_extractor): FlattenExtractor(
+            (flatten): Flatten(start_dim=1, end_dim=-1)
+          )
+          (qf0): Sequential(
+            (0): Linear(in_features=28, out_features=256, bias=True)
+            (1): ReLU()
+            (2): Linear(in_features=256, out_features=256, bias=True)
+            (3): ReLU()
+            (4): Linear(in_features=256, out_features=1, bias=True)
+          )
+          (qf1): Sequential(
+            (0): Linear(in_features=28, out_features=256, bias=True)
+            (1): ReLU()
+            (2): Linear(in_features=256, out_features=256, bias=True)
+            (3): ReLU()
+            (4): Linear(in_features=256, out_features=1, bias=True)
+          )
+        )
+device:
+    value: cuda
+ent_coef:
+    value: auto
+ent_coef_optimizer:
+    value: |-
+        Adam (
+        Parameter Group 0
+            amsgrad: False
+            betas: (0.9, 0.999)
+            capturable: False
+            differentiable: False
+            eps: 1e-08
+            foreach: None
+            fused: None
+            lr: 0.0003
+            maximize: False
+            weight_decay: 0
+        )
+env:
+    value: <stable_baselines3.common.vec_env.dummy_vec_env.DummyVecEnv object at 0x7f0e7f79ab00>
+ep_info_buffer:
+    value: deque([], maxlen=100)
+ep_success_buffer:
+    value: deque([], maxlen=100)
+gamma:
+    value: 0.98
+gradient_steps:
+    value: 1
+learning_rate:
+    value: 0.0003
+learning_starts:
+    value: 100
+log_ent_coef:
+    value: tensor([0.], device='cuda:0', requires_grad=True)
+lr_schedule:
+    value: FloatSchedule(ConstantSchedule(val=0.0003))
+n_envs:
+    value: 1
+n_steps:
+    value: 1
+num_timesteps:
+    value: 0
+observation_space:
+    value: Box(-inf, inf, (24,), float32)
+optimize_memory_usage:
+    value: "False"
+policy:
+    value: |-
+        SACPolicy(
+          (actor): Actor(
+            (features_extractor): FlattenExtractor(
+              (flatten): Flatten(start_dim=1, end_dim=-1)
+            )
+            (latent_pi): Sequential(
+              (0): Linear(in_features=24, out_features=256, bias=True)
+              (1): ReLU()
+              (2): Linear(in_features=256, out_features=256, bias=True)
+              (3): ReLU()
+            )
+            (mu): Linear(in_features=256, out_features=4, bias=True)
+            (log_std): Linear(in_features=256, out_features=4, bias=True)
+          )
+          (critic): ContinuousCritic(
+            (features_extractor): FlattenExtractor(
+              (flatten): Flatten(start_dim=1, end_dim=-1)
+            )
+            (qf0): Sequential(
+              (0): Linear(in_features=28, out_features=256, bias=True)
+              (1): ReLU()
+              (2): Linear(in_features=256, out_features=256, bias=True)
+              (3): ReLU()
+              (4): Linear(in_features=256, out_features=1, bias=True)
+            )
+            (qf1): Sequential(
+              (0): Linear(in_features=28, out_features=256, bias=True)
+              (1): ReLU()
+              (2): Linear(in_features=256, out_features=256, bias=True)
+              (3): ReLU()
+              (4): Linear(in_features=256, out_features=1, bias=True)
+            )
+          )
+          (critic_target): ContinuousCritic(
+            (features_extractor): FlattenExtractor(
+              (flatten): Flatten(start_dim=1, end_dim=-1)
+            )
+            (qf0): Sequential(
+              (0): Linear(in_features=28, out_features=256, bias=True)
+              (1): ReLU()
+              (2): Linear(in_features=256, out_features=256, bias=True)
+              (3): ReLU()
+              (4): Linear(in_features=256, out_features=1, bias=True)
+            )
+            (qf1): Sequential(
+              (0): Linear(in_features=28, out_features=256, bias=True)
+              (1): ReLU()
+              (2): Linear(in_features=256, out_features=256, bias=True)
+              (3): ReLU()
+              (4): Linear(in_features=256, out_features=1, bias=True)
+            )
+          )
+        )
+policy_class:
+    value: <class 'stable_baselines3.sac.policies.SACPolicy'>
+policy_kwargs:
+    value: '{''use_sde'': False}'
+replay_buffer:
+    value: <stable_baselines3.common.buffers.ReplayBuffer object at 0x7f0e7f79b550>
+replay_buffer_class:
+    value: <class 'stable_baselines3.common.buffers.ReplayBuffer'>
+replay_buffer_kwargs:
+    value: '{}'
+sde_sample_freq:
+    value: -1
+seed:
+    value: None
+start_time:
+    value: 1771324529267667220
+target_entropy:
+    value: -4
+target_update_interval:
+    value: 1
+tau:
+    value: 0.005
+tensorboard_log:
+    value: ./../models/training/sac_tensorboard/
+timesteps:
+    value: 200000
+train_freq:
+    value: 'TrainFreq(frequency=1, unit=<TrainFrequencyUnit.STEP: ''step''>)'
+use_sde:
+    value: "False"
+use_sde_at_warmup:
+    value: "False"
+verbose:
+    value: 1
