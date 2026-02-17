@@ -1,3 +1,9 @@
+import multiprocessing as mp
+
+# CRITICAL FIX: Set spawn method BEFORE importing anything else
+if __name__ == "__main__":
+    mp.set_start_method('spawn', force=True)
+    
 import gymnasium as gym
 import panda_gym
 import torch
@@ -18,8 +24,7 @@ import os
 def make_env(user_stl, rank=0):
     def _init():
         base_env = gym.make('PandaPickAndPlace-v3') 
-        base_env.reset(
-        )
+        base_env.reset()
         env = STLGymWrapper(base_env, user_stl, define_predicates())
         env.unwrapped.task.distance_threshold = 0.04
         return Monitor(env)
@@ -93,12 +98,12 @@ def main():
     ##########################
     print("Phase 2: SAC Training with Expert-Seeded Buffer =================================")
     phase_callback = STLLoggingCallback(verbose=1)
-    checkpoint_callback = CheckpointCallback(   save_freq=50_000, 
-                                                save_path="./../models/training/sac_checkpoints/", 
-                                                name_prefix="sac_multi")
+    # checkpoint_callback = CheckpointCallback(   save_freq=50_000, 
+    #                                             save_path="./../models/training/sac_checkpoints/", 
+    #                                             name_prefix="sac_multi")
     print("\nStarting training for 200,000 timesteps...")
     model.learn(    total_timesteps=200_000,
-                    callback=[phase_callback, checkpoint_callback],
+                    callback=[phase_callback],
                     log_interval=10,
                 )
     base_path = "./../models/training/sac_RL_withBC_v"
