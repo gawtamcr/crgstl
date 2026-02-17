@@ -1,0 +1,12 @@
+{"time":"2026-02-17T13:05:14.383786053+01:00","level":"INFO","msg":"stream: starting","core version":"0.23.0"}
+{"time":"2026-02-17T13:05:14.712909588+01:00","level":"INFO","msg":"stream: created new stream","id":"pk9a3ma6"}
+{"time":"2026-02-17T13:05:14.712955858+01:00","level":"INFO","msg":"handler: started","stream_id":"pk9a3ma6"}
+{"time":"2026-02-17T13:05:14.713840117+01:00","level":"INFO","msg":"stream: started","id":"pk9a3ma6"}
+{"time":"2026-02-17T13:05:14.713849917+01:00","level":"INFO","msg":"writer: started","stream_id":"pk9a3ma6"}
+{"time":"2026-02-17T13:05:14.713868437+01:00","level":"INFO","msg":"sender: started","stream_id":"pk9a3ma6"}
+{"time":"2026-02-17T13:05:15.282388789+01:00","level":"ERROR","msg":"git repo not found","error":"repository does not exist"}
+{"time":"2026-02-17T13:05:48.477403597+01:00","level":"WARN","msg":"tensorboard: no root directory","error":"timed out after 10s"}
+{"time":"2026-02-17T13:05:48.478140467+01:00","level":"INFO","msg":"tensorboard: tracking new log directory","rootDir":{},"logDir":"LocalOrCloudPath(LocalPath=\"/Midgard/home/gawtam/crgstl/models/training/sac_multi/SAC_16\")","namespace":""}
+{"time":"2026-02-17T13:05:48.482174453+01:00","level":"ERROR","msg":"tensorboard: failed to infer path where to save file","file":"/Midgard/home/gawtam/crgstl/models/training/sac_multi/SAC_16/events.out.tfevents.1771329938.arwen.2379444.0","error":"\"/Midgard/home/gawtam/crgstl/models/training/sac_multi/SAC_16/events.out.tfevents.1771329938.arwen.2379444.0\" does not start with \"/Midgard/home/gawtam/crgstl/src\""}
+{"time":"2026-02-17T13:05:58.500980814+01:00","level":"INFO","msg":"flowcontrol: backed up, offloading to disk","recordNumber":259}
+{"time":"2026-02-17T13:05:58.501204874+01:00","level":"INFO","msg":"flowcontrol: unblocked","totalOffloaded":1}

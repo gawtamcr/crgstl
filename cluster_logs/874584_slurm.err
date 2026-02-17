@@ -1,0 +1,51 @@
+/var/lib/slurm/slurmd/job874584/slurm_script: line 13: cd: /Midgard/home/gawtam/stl/src: No such file or directory
+wandb: Currently logged in as: gawtamcr3 (gawtamcr-kth) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: gawtamcr3 (gawtamcr-kth) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run rxpsg1f0
+wandb: Tracking run with wandb version 0.23.0
+wandb: Run data is saved locally in ./../models/training/wandb/run-20260217_130815-rxpsg1f0
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run SAC_Multi_BC
+wandb: ⭐️ View project at https://wandb.ai/gawtamcr-kth/crgstl-wandb
+wandb: 🚀 View run at https://wandb.ai/gawtamcr-kth/crgstl-wandb/runs/rxpsg1f0
+pybullet build time: Jan 29 2025 23:16:28
+pybullet build time: Jan 29 2025 23:16:28
+pybullet build time: Jan 29 2025 23:16:28
+pybullet build time: Jan 29 2025 23:16:28
+pybullet build time: Jan 29 2025 23:16:28
+wandb: WARNING Found log directory outside of given root_logdir, dropping given root_logdir for event file in ./../models/training/sac_multi/SAC_17
+wandb: updating run metadata
+wandb: uploading model.zip; uploading output.log; uploading wandb-summary.json
+wandb: uploading model.zip; uploading output.log
+wandb: uploading model.zip
+wandb: 
+wandb: Run history:
+wandb:          global_step ▁▁▁▂▂▂▂▂▂▂▃▃▃▃▃▃▃▃▄▄▄▅▅▅▅▆▆▆▆▆▇▇▇▇▇▇▇▇██
+wandb:  rollout/ep_len_mean ▁▆█▇▇█▇█▇▅▅▅▆▇▇▇▆▇▇▅▆▆▆▇▇█▇▇▇▆▆▆▅▄▇▆▆▇▅▅
+wandb:  rollout/ep_rew_mean █▆███▆▆▅▅▆▇▇▇▇▇▆▆▆▆▆▆▅▅▆▆▆▆▇▄▄▄▄▅▃▄▄▃▂▁▁
+wandb: rollout/success_rate █▄▂▂▂▂▂▃▃▆▅▅▅▃▄▅▁▂▄▂▂▂▁▃▃▄▄▄▅▄▂▂▅▇█▃▅█▇▅
+wandb:  stl/episode_success ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:     stl/success_rate ▁▂▂▁▁▂▂▂▅▆▁▂▁▁▁▁▁▁▂▂▁▁▁▁▁▂▂▂▂▂▂▂▃▅▅▂▅▆▅█
+wandb:     stl/timeout_rate ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:      stl/transitions ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:             time/fps █▅▂▅▅▅▆▇██▄▃▄▄▃▄▄▄▃▃▂▂▂▃▃▃▃▂▂▂▂▂▂▂▂▁▁▂▂▂
+wandb:     train/actor_loss ██▇▇▇▇▇▇▆▆▅▅▅▄▄▂▂▂▃▃▄▄▄▄▄▅▅▅▅▄▄▄▄▄▄▃▃▂▁▁
+wandb:                   +4 ...
+wandb: 
+wandb: Run summary:
+wandb:          global_step 200112
+wandb:  rollout/ep_len_mean 44.65
+wandb:  rollout/ep_rew_mean -296.10748
+wandb: rollout/success_rate 0.04
+wandb:  stl/episode_success 1
+wandb:     stl/success_rate 0.1
+wandb:     stl/timeout_rate 0
+wandb:      stl/transitions 1
+wandb:             time/fps 116
+wandb:     train/actor_loss -952.151
+wandb:                   +4 ...
+wandb: 
+wandb: 🚀 View run SAC_Multi_BC at: https://wandb.ai/gawtamcr-kth/crgstl-wandb/runs/rxpsg1f0
+wandb: ⭐️ View project at: https://wandb.ai/gawtamcr-kth/crgstl-wandb
+wandb: Synced 6 W&B file(s), 0 media file(s), 0 artifact file(s) and 1 other file(s)
+wandb: Find logs at: ./../models/training/wandb/run-20260217_130815-rxpsg1f0/logs
