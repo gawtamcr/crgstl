@@ -3,5 +3,11 @@ gymnasium
 panda-gym
 tensorboard
 torch
+stable-baselines3[extra]
+
+# Cluster
+wandb
+accelerate
+
+# Misc
 matplotlib
-stable-baselines3

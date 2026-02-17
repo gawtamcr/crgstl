@@ -1,6 +1,8 @@
 import os
 import gymnasium as gym
 import panda_gym
+import wandb
+from wandb.integration.sb3 import WandbCallback
 from stable_baselines3 import SAC
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.callbacks import CheckpointCallback
@@ -13,7 +15,23 @@ from behavior_cloning.stl_logging import STLLoggingCallback
 
 
 def main():
-    
+
+    run = wandb.init(
+        entity="gawtamcr-kth",
+        project="stl",
+        config={
+            "algo": "SAC",
+            "timesteps": 200_000,
+            "buffer_size": 100_000,
+            "learning_rate": 3e-4,
+            "batch_size": 256,
+            "gamma": 0.98,
+        },
+        sync_tensorboard=True,
+        monitor_gym=True,
+        save_code=True,
+    )
+
     user_stl = "F[0,10.0](approach & F[0,2.0](grasp & F[0,5.0](move)))"
 
     base_env = gym.make('PandaPickAndPlace-v3', render_mode="rgb_array")
@@ -25,7 +43,7 @@ def main():
     model = SAC(    "MlpPolicy", 
                     env, 
                     verbose=1, 
-                    tensorboard_log="./../models/training/sac_crgstl_tensorboard/",
+                    tensorboard_log="./../models/training/sac_tensorboard/",
                     buffer_size=100_000,
                     learning_rate=3e-4,
                     batch_size=256,
@@ -53,9 +71,14 @@ def main():
     checkpoint_callback = CheckpointCallback(   save_freq=50_000, 
                                                 save_path="./../models/training/sac_checkpoints/", 
                                                 name_prefix="sac_stl")
+    wandb_callback = WandbCallback(
+        gradient_save_freq=0,
+        model_save_path="./../models/training/wandb_models/",
+        verbose=2,
+    )
     print("\nStarting training for 200,000 timesteps...")
     model.learn(    total_timesteps=200_000,
-                    callback=[phase_callback, checkpoint_callback],
+                    callback=[phase_callback, checkpoint_callback, wandb_callback],
                     log_interval=10,
                 )
     base_path = "./../models/training/sac_RL_withBC_v"
@@ -65,6 +88,7 @@ def main():
     ###########################
 
     env.close()
+    wandb.finish()
     print("\nTraining complete!")
 
 if __name__ == "__main__":
