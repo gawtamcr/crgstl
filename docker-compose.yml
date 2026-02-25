@@ -15,3 +15,6 @@ services:
     stdin_open: true    
     tty: true
     runtime: nvidia
+
+    # train_RL_with_BC
+    # run_PF_controller

@@ -12,7 +12,7 @@ from custom_env.custom_panda_task import STLPickAndPlaceTask, STLPickAndPlaceEnv
 def evaluate():
     # Configuration
     user_stl = "F[0,10.0](approach & F[0,2.0](grasp & F[0,5.0](move)))"
-    model_path = "../models/training/sac_RL_withBC_v3"    
+    model_path = "../models/training/sac_RL_withBC_v1"    
     print(f"Loading model: {model_path}")
     
     # Setup Environment

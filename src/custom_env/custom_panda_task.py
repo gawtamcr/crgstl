@@ -41,9 +41,10 @@ class STLPickAndPlaceTask(Task):
 
     def reset(self):
         # Randomly sample a goal position
-        self.goal = np.random.uniform([-0.5, -0.5, 0.0], [0.5, 0.5, 0.05])
+        scale = 0.2
+        self.goal = np.random.uniform([-scale, -scale, 0.0], [scale, scale, 0.05])
         # Reset the position of the object
-        object_pos = np.random.uniform([-0.1, -0.1, 0.0], [0.1, 0.1, 0.05])
+        object_pos = np.random.uniform([-scale, -scale, 0.0], [scale, scale, 0.05])
         self.sim.set_base_pose("object", position=object_pos, orientation=np.array([0.0, 0.0, 0.0, 1.0]))
         self.sim.set_base_pose("target", position=self.goal, orientation=np.array([0.0, 0.0, 0.0, 1.0]))
 
@@ -115,47 +116,47 @@ class STLPickAndPlaceEnv(RobotTaskEnv):
         
         # 4. Override Reward and Termination based on STL status
         if self.planner.finished:
-            reward = 1.0
+          #  reward = 1.0
             terminated = True
             info["is_success"] = True
             info["phase"] = "DONE"
         elif self.planner.failed_timeout:
-            reward = -1.0
+          #  reward = -1.0
             terminated = True
             info["is_success"] = False
             info["phase"] = "FAILED"
         else:
-            reward = 0.0
+           # reward = 0.0
             terminated = False
             info["is_success"] = False
             info["phase"] = phase
             
         return obs, reward, terminated, truncated, info
 
-if __name__ == "__main__":
-    # Example usage
-    base_env = STLPickAndPlaceEnv(render_mode="human")
-    env = STLGymWrapper(base_env, base_env.stl_string, base_env.predicates)
+# if __name__ == "__main__":
+#     # Example usage
+#     base_env = STLPickAndPlaceEnv(render_mode="human")
+#     env = STLGymWrapper(base_env, base_env.stl_string, base_env.predicates)
     
-    # Load the trained model
-    # Note: The model expects the same observation space it was trained on.
-    model = SAC.load("../models/training/sac_RL_withBC_v3")
+#     # Load the trained model
+#     # Note: The model expects the same observation space it was trained on.
+#     model = SAC.load("../models/training/sac_RL_withBC_v3")
     
-    print(f"Task STL: {base_env.stl_string}")
+#     print(f"Task STL: {base_env.stl_string}")
     
-    obs, info = env.reset()
-    print("Environment reset. Starting loop...")
+#     obs, info = env.reset()
+#     print("Environment reset. Starting loop...")
     
-    for i in range(200):
-        action, _states = model.predict(obs, deterministic=True)
-        obs, reward, terminated, truncated, info = env.step(action)
+#     for i in range(200):
+#         action, _states = model.predict(obs, deterministic=True)
+#         obs, reward, terminated, truncated, info = env.step(action)
         
-        if i % 10 == 0:
-            print(f"Step {i}: Phase={info.get('phase')}, Reward={reward}")
+#         if i % 10 == 0:
+#             print(f"Step {i}: Phase={info.get('phase')}, Reward={reward}")
 
-        time.sleep(0.05) # Slow down for visualization
-        if terminated or truncated:
-            print(f"Episode finished at step {i}. Success: {info.get('is_success')}")
-            obs, info = env.reset()
+#         time.sleep(0.05) # Slow down for visualization
+#         if terminated or truncated:
+#             print(f"Episode finished at step {i}. Success: {info.get('is_success')}")
+#             obs, info = env.reset()
             
-    env.close()
+#     env.close()

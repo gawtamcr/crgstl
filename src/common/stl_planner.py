@@ -20,12 +20,12 @@ class STLPlanner:
         dt = current_sim_time - self.phase_start_time
         time_left = self.current_node.max_time - dt
 
-        # Check timeout
+        # check timeout
         if time_left <= 0:
             self.failed_timeout = True
             return self.current_node.phase_name, self.current_node.safety_constraint, 0.0
 
-        # Check phase completion predicate
+        # check predicate satisfaction and check_func returns robustness > 0
         check_func = self.predicates.get(self.current_node.phase_name)
         if check_func and check_func(obs_dict) > 0:
             if self.current_node.next_node:
