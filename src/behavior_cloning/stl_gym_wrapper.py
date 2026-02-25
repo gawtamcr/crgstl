@@ -39,11 +39,10 @@ class STLGymWrapper(gym.Wrapper):
         base_obs = obs_dict['observation']
         
         # Determine target based on current phase
-        if phase in ["approach", "grasp"]:
-            target = obs_dict['achieved_goal'][:3]  # object position
+        if phase in self.predicates:
+            target = self.predicates[phase].get_target(obs_dict)
         else:
             target = obs_dict['desired_goal'][:3]   # final goal position
-
         
         # Robot end-effector position
         ee_pos = base_obs[:3]
