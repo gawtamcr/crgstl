@@ -40,11 +40,10 @@ class STLGymWrapper(gym.Wrapper):
         
         # Determine target based on current phase
         if phase in ["approach", "grasp"]:
-            # Target is object position
-            target = obs_dict['achieved_goal'][:3]
+            target = obs_dict['achieved_goal'][:3]  # object position
         else:
-            # Target is final goal position
-            target = obs_dict['desired_goal'][:3]
+            target = obs_dict['desired_goal'][:3]   # final goal position
+
         
         # Robot end-effector position
         ee_pos = base_obs[:3]
@@ -80,43 +79,11 @@ class STLGymWrapper(gym.Wrapper):
         # Update planner
         phase, safety, t_left = self.planner.update(obs_dict, self.sim_time)
         
-        # Extract positions
-        ee_pos = obs_dict['observation'][:3]
-        obj_pos = obs_dict['achieved_goal'][:3]
-        goal_pos = obs_dict['desired_goal'][:3]
-        
-        dist_to_obj = np.linalg.norm(ee_pos - obj_pos)
-        dist_obj_to_goal = np.linalg.norm(obj_pos - goal_pos)
-        
         # Dense reward shaping based on current phase
         reward = 0.0
         
-        if phase == "approach":
-            # Encourage moving end-effector toward object
-            reward -= dist_to_obj * 5.0
-            # Small penalty for premature closing
-            if action[3] < 0:  # Gripper closing
-                reward -= 1.0
-                
-        elif phase == "grasp":
-            # Encourage contact with object
-            reward -= dist_to_obj * 3.0
-            # Reward lifting object
-            if obj_pos[2] > 0.025:  # Object off table
-                reward += (obj_pos[2] - 0.025) * 100.0
-            # Encourage closing gripper during grasp
-            if action[3] > 0:  # Gripper opening
-                reward -= 2.0
-                
-        elif phase == "move":
-            # Encourage moving object to goal
-            reward -= dist_obj_to_goal * 8.0
-            # Maintain object height (avoid dropping)
-            if obj_pos[2] < 0.025:
-                reward -= 10.0
-            # Penalty for opening gripper prematurely
-            if action[3] > 0:
-                reward -= 5.0
+        if phase in self.predicates:
+            reward += self.predicates[phase].compute_reward(obs_dict, action)
 
         # Phase transition bonus
         if phase != self.prev_phase and self.prev_phase is not None:

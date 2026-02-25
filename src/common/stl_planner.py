@@ -27,7 +27,7 @@ class STLPlanner:
 
         # Check phase completion predicate
         check_func = self.predicates.get(self.current_node.phase_name)
-        if check_func and check_func(obs_dict):
+        if check_func and check_func(obs_dict) > 0:
             if self.current_node.next_node:
                 # Transition to next phase
                 self.current_node = self.current_node.next_node

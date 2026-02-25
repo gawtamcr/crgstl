@@ -42,6 +42,11 @@ class SafeFunnelController:
             # Move to object and close gripper
             target = obs_dict['achieved_goal'][:3]
             direction = target - ee_pos
+            
+            # If close to object, lift it to satisfy grasp predicate
+            if np.linalg.norm(direction) < 0.02:
+                direction[2] += 0.1
+                
             action[:3] = np.clip(direction * self.position_gain, -1.0, 1.0)
             action[3] = -1.0  # Close gripper
             

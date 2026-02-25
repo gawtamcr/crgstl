@@ -49,13 +49,13 @@ def main():
     
     ##########################
     print("Phase 2: SAC Training with Expert-Seeded Buffer =================================")
-    phase_callback = STLLoggingCallback(verbose=1)
+    # phase_callback = STLLoggingCallback(verbose=1)
     checkpoint_callback = CheckpointCallback(   save_freq=50_000, 
                                                 save_path="./../models/training/sac_checkpoints/", 
                                                 name_prefix="sac_stl")
     print("\nStarting training for 200,000 timesteps...")
     model.learn(    total_timesteps=200_000,
-                    callback=[phase_callback, checkpoint_callback],
+                  #   callback=[phase_callback, checkpoint_callback],
                     log_interval=10,
                 )
     base_path = "./../models/training/sac_RL_withBC_v"
