@@ -54,3 +54,45 @@ def define_predicates() -> Dict[str, STLPredicate]:
             target_fn=get_goal_pos
         )
     }
+
+def define_stacking_predicates() -> Dict[str, STLPredicate]:
+    # Offsets based on PandaGym observation structure:
+    # [0:7] Robot (EE pos at 0:3)
+    # [7:20] Object 1 (Pos at 7:10)
+    # [20:33] Object 2 (Pos at 20:23)
+    
+    def get_ee(o): return o['observation'][:3]
+    def get_obj1(o): return o['observation'][7:10]
+    def get_obj2(o): return o['observation'][20:23]
+    def get_goal(o): return o['desired_goal'][:3]
+
+    return {
+        # --- CUBE 1 ---
+        "approach_1": STLPredicate(
+            robustness_fn=lambda o: 0.02 - np.linalg.norm(get_ee(o) - get_obj1(o)),
+            target_fn=get_obj1
+        ),
+        "grasp_1": STLPredicate(
+            robustness_fn=lambda o: get_obj1(o)[2] - 0.05, # Lift check
+            target_fn=get_obj1
+        ),
+        "place_1": STLPredicate(
+            robustness_fn=lambda o: 0.05 - np.linalg.norm(get_obj1(o) - get_goal(o)),
+            target_fn=get_goal
+        ),
+
+        # --- CUBE 2 ---
+        "approach_2": STLPredicate(
+            robustness_fn=lambda o: 0.05 - np.linalg.norm(get_ee(o) - get_obj2(o)),
+            target_fn=get_obj2
+        ),
+        "grasp_2": STLPredicate(
+            robustness_fn=lambda o: get_obj2(o)[2] - 0.05, # Lift check
+            target_fn=get_obj2
+        ),
+        "stack_2": STLPredicate(
+            # Target is on top of Cube 1
+            robustness_fn=lambda o: 0.05 - np.linalg.norm(get_obj2(o) - (get_obj1(o) + [0,0,0.04])),
+            target_fn=lambda o: get_obj1(o) + [0, 0, 0.04]
+        )
+    }

@@ -6,6 +6,18 @@ class STLPlanner:
     def __init__(self, stl_string: str, predicates: Dict[str, Callable]):
         print(f"Parsing STL: {stl_string}")
         self.root_node = RecursiveSTLNode(stl_string)
+
+        ## Added debug print to verify parsing
+        print("Parsed STL Chain:")
+        temp = self.root_node
+        i = 1
+        while temp:
+            safety_str = f" & G({temp.safety_constraint})" if temp.safety_constraint else ""
+            print(f"  {i}. F[{temp.min_time}, {temp.max_time}] ({temp.phase_name}{safety_str})")
+            temp = temp.next_node
+            i += 1
+        #### 
+        
         self.current_node = self.root_node
         self.predicates = predicates
         self.phase_start_time: float = 0.0
